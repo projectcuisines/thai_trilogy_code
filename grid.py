@@ -39,7 +39,8 @@ def _guess_bounds(points, bound_position=0.5):
 
     Returns
     -------
-    Array of shape (N, 2).
+    numpy.array
+        Array of shape (N, 2).
     """
     diffs = np.diff(points)
     diffs = np.insert(diffs, 0, diffs[0])
@@ -51,7 +52,7 @@ def _guess_bounds(points, bound_position=0.5):
     return np.array([min_bounds, max_bounds]).transpose()
 
 
-def _quadrant_area(radian_lat_bounds, radian_lon_bounds, radius_of_earth):
+def _quadrant_area(radian_lat_bounds, radian_lon_bounds, r_planet):
     r"""
     Calculate spherical segment areas.
 
@@ -69,15 +70,16 @@ def _quadrant_area(radian_lat_bounds, radian_lon_bounds, radius_of_earth):
     Parameters
     ----------
     radian_lat_bounds: numpy.array
-        Array of latitude bounds (radians) of shape (M, 2)
+        Array of latitude bounds (radians) of shape (M, 2).
     radian_lon_bounds: numpy.array
-        Array of longitude bounds (radians) of shape (N, 2)
-    radius_of_earth: float
-        Radius of the Earth (currently assumed spherical)
+        Array of longitude bounds (radians) of shape (N, 2).
+    r_planet: float
+        Radius of the planet (currently assumed spherical).
 
     Returns
     -------
-    Array of grid cell areas of shape (M, N).
+    numpy.array
+       Array of grid cell areas of shape (M, N).
     """
     # ensure pairs of bounds
     if (
@@ -89,7 +91,7 @@ def _quadrant_area(radian_lat_bounds, radian_lon_bounds, radius_of_earth):
         raise ValueError("Bounds must be [n,2] array")
 
     # fill in a new array of areas
-    radius_sqr = radius_of_earth ** 2
+    radius_sqr = r_planet ** 2
     radian_lat_64 = radian_lat_bounds.astype(np.float64)
     radian_lon_64 = radian_lon_bounds.astype(np.float64)
 
@@ -137,7 +139,7 @@ def add_cyclic_point_to_da(xr_da, coord_name):
 
 
 def calc_spatial_integral(
-    xr_da, lon_name="longitude", lat_name="latitude", radius=EARTH_RADIUS
+    xr_da, lon_name="longitude", lat_name="latitude", r_planet=EARTH_RADIUS
 ):
     """
     Calculate spatial integral of xarray.DataArray with grid cell weighting.
@@ -150,17 +152,18 @@ def calc_spatial_integral(
         Name of x-coordinate
     lat_name: str, optional
         Name of y-coordinate
-    radius: float
+    r_planet: float
         Radius of the planet [metres], currently assumed spherical (not important anyway)
 
     Returns
     -------
-    Spatially averaged xarray.DataArray.
+    xarray.DataArray
+        Spatially averaged xarray.DataArray.
     """
     lon = xr_da[lon_name].values
     lat = xr_da[lat_name].values
 
-    area_weights = grid_cell_areas(lon, lat, radius=radius)
+    area_weights = grid_cell_areas(lon, lat, r_planet=r_planet)
 
     return (xr_da * area_weights).sum(dim=[lon_name, lat_name])
 
@@ -189,7 +192,7 @@ def calc_spatial_mean(xr_da, lon_name="longitude", lat_name="latitude"):
     )
 
 
-def grid_cell_areas(lon1d, lat1d, radius=EARTH_RADIUS):
+def grid_cell_areas(lon1d, lat1d, r_planet=EARTH_RADIUS):
     """
     Calculate grid cell areas given 1D arrays of longitudes and latitudes
     for a planet with the given radius.
@@ -200,7 +203,7 @@ def grid_cell_areas(lon1d, lat1d, radius=EARTH_RADIUS):
         Array of longitude points [degrees] of shape (M,)
     lat1d: numpy.array
         Array of latitude points [degrees] of shape (M,)
-    radius: float, optional
+    r_planet: float, optional
         Radius of the planet [metres] (currently assumed spherical)
 
     Returns
@@ -210,7 +213,7 @@ def grid_cell_areas(lon1d, lat1d, radius=EARTH_RADIUS):
     """
     lon_bounds_radian = np.deg2rad(_guess_bounds(lon1d))
     lat_bounds_radian = np.deg2rad(_guess_bounds(lat1d))
-    area = _quadrant_area(lat_bounds_radian, lon_bounds_radian, radius)
+    area = _quadrant_area(lat_bounds_radian, lon_bounds_radian, r_planet)
     return area
 
 
