@@ -179,8 +179,9 @@ def meridional_mean(xr_da, lat_name="latitude"):
     xarray.DataArray
         Array averaged over the latitudes.
     """
-    coslat = np.cos(np.deg2rad(xr_da[lat_name]))
-    xr_da_mean = (xr_da * coslat).sum(dim=lat_name) / (coslat.sum(lat_name))
+    coslat = da.cos(da.deg2rad(xr_da[lat_name]))
+    xr_da_mean = xr_da.weighted(coslat).mean(dim=lat_name)
+    # xr_da_mean = (xr_da * coslat).sum(dim=lat_name) / (coslat.sum(lat_name))
     return xr_da_mean
 
 
