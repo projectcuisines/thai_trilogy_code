@@ -240,7 +240,7 @@ def spatial_integral(
 
 def spatial_mean(xr_da, lon_name="longitude", lat_name="latitude"):
     """
-    Calculate spatial mean of an `xarray.DataArray` with latitude weighting.
+    Perform averaging on an `xarray.DataArray` with latitude weighting.
 
     Parameters
     ----------
@@ -256,10 +256,9 @@ def spatial_mean(xr_da, lon_name="longitude", lat_name="latitude"):
     xarray.DataArray
         Spatially averaged xarray.DataArray.
     """
-    coslat = np.cos(np.deg2rad(xr_da[lat_name]))
-    return (xr_da * coslat).sum(dim=[lon_name, lat_name]) / (
-        coslat.sum(lat_name) * len(xr_da[lon_name])
-    )
+    weights = da.cos(da.deg2rad(xr_da[lat_name]))
+    res = xr_da.weighted(weights).mean(dim=[lon_name, lat_name])
+    return res
 
 
 def wrap_lons(lons, base, period):
