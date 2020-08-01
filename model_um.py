@@ -31,7 +31,7 @@ def adjust_um_grid(darr):
     return out
 
 
-def calc_um_ocean_frac(um_ds, t_freeze=273.15):
+def calc_um_ocean_frac(um_ds, t_freeze=271.35):
     """Calculate the open ocean fraction from the UM dataset."""
     t_sfc = um_ds["STASH_m01s00i024"]  # Surface temperature
     ocean_frac = da.exp(-(t_freeze - t_sfc) / 2)
