@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """Utilities for the ExoCAM output."""
+import dask.array as da
+
 from grid import add_cyclic_point_to_da, reverse_along_dim
 
 
