@@ -4,7 +4,12 @@ import dask.array as da
 from grid import EARTH_RADIUS
 
 
-def hdiv(i_arr, j_arr, lon_name="longitude", lat_name="latitude", r_planet=EARTH_RADIUS):
+__all__ = ("hdiv", "moist_static_energy")
+
+
+def hdiv(
+    i_arr, j_arr, lon_name="longitude", lat_name="latitude", r_planet=EARTH_RADIUS
+):
     r"""
     Calculate horizontal divergence of two components of a vector as `xarray.DataArray`s.
 
@@ -52,8 +57,47 @@ def hdiv(i_arr, j_arr, lon_name="longitude", lat_name="latitude", r_planet=EARTH
     # Sum the components and divide by {r cos \phi}
     h_div = (di_dlambda + djcos_dphi) / (r_planet * cos_lat)
     h_div = h_div.rename("horizontal_divergence")
-    h_div.attrs = {
-        "units": "s-1",
-        "long_name": "horizontal_divergence"
-    }
+    h_div.attrs = {"units": "s-1", "long_name": "horizontal_divergence"}
     return h_div
+
+
+def moist_static_energy(temp, alt, spec_hum, c_p, gravity, latent_heat):
+    """
+    Calculate moist static energy and its components.
+
+    .. math::
+        MSE = DSE + LSE = (c_p T + g z) + L_v q
+
+    Parameters
+    ----------
+    temp: xarray.DataArray
+        Array of temperature [K].
+    alt: xarray.DataArray
+        Array of level heights [m].
+    spec_hum: xarray.DataArray
+        Array of specific humidity [kg kg-1].
+    c_p: float
+        Dry air specific heat capacity [m2 s-2 K-1].
+    gravity: float
+        Gravity constant [m s-2].
+    latent_heat: float
+        Latent heat of vaporization [J kg-1].
+
+    Returns
+    -------
+    dse: xarray.DataArray
+        Array of dry static energy.
+    lse: xarray.DataArray
+        Array of latent static energy.
+    mse: xarray.DataArray
+        Array of moist static energy (Sum of DSE and LSE).
+    """
+    # Geopotential height
+    ghgt = gravity * alt
+    # Dry component: c_p T + g z
+    dse = c_p * temp + ghgt
+    # latent component :
+    lse = latent_heat * spec_hum
+    # dry and latent components
+    mse = dse + lse
+    return dse, lse, mse
