@@ -7,7 +7,7 @@ import xarray as xr
 from grid import reverse_along_dim, roll_da_to_pm180
 
 
-__all__ = ("adjust_um_grid", "calc_um_ocean_frac", "open_mf_um")
+__all__ = ("adjust_um_grid", "calc_um_ocean_frac", "open_mf_um", "prep_um_ds")
 
 
 def adjust_um_grid(darr):
@@ -102,3 +102,59 @@ def open_mf_um(files, main_time, rad_time, **kw_open):
         proc_ds = xr.Dataset(proc_ds)
         dsets.append(proc_ds)
     return xr.concat(dsets, main_time)
+
+
+def prep_um_ds(raw_ds):
+    """Prepare UM dataset: interpolate data to common grid, drop redundant coordinates."""
+    # Reference grid: use theta-grid for all variables
+    lat = raw_ds.latitude_t
+    lon = raw_ds.longitude_t
+    alt = raw_ds.thlev_eta_theta
+    coords_to_drop = [
+        "rholev_eta_rho",
+        "rholev_C_rho",
+        "rholev_zsea_rho",
+        "rholev_model_level_number",
+        "latitude_cu",
+        "longitude_cu",
+        "latitude_cv",
+        "longitude_cv",
+    ]
+    # Loop over data arrays and adjust their grids
+    new_ds = {}
+    for d in raw_ds.data_vars:
+        if (raw_ds[d].ndim == 1) or (raw_ds[d].name.lower().endswith("_bounds")):
+            # Skip `grid_crs` and bound arrays
+            continue
+        if d == "STASH_m01s00i407":
+            # Skip pressure on rho levels
+            continue
+        if d == "STASH_m01s00i002":
+            var = raw_ds[d].interp(
+                latitude_cu=lat,
+                longitude_cu=lon,
+                rholev_eta_rho=alt,
+                kwargs={"fill_value": "extrapolate"},
+            )
+            for coord in coords_to_drop:
+                try:
+                    var = var.drop_vars(coord)
+                except ValueError:
+                    pass
+        elif d == "STASH_m01s00i003":
+            var = raw_ds[d].interp(
+                latitude_cv=lat,
+                longitude_cv=lon,
+                rholev_eta_rho=alt,
+                kwargs={"fill_value": "extrapolate"},
+            )
+            for coord in coords_to_drop:
+                try:
+                    var = var.drop_vars(coord)
+                except ValueError:
+                    pass
+        else:
+            var = raw_ds[d]
+        new_ds[d] = adjust_um_grid(var)
+    new_ds = xr.Dataset(new_ds).swap_dims({"thlev_eta_theta": "thlev_zsea_theta"})
+    return new_ds
