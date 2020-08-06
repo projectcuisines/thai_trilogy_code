@@ -101,7 +101,7 @@ def open_mf_um(files, main_time, rad_time, **kw_open):
     return xr.concat(dsets, main_time)
 
 
-def prep_um_ds(raw_ds, vert_lev_miss_val="extrapolate"):
+def prep_um_ds(raw_ds, vert_lev_miss_val="drop"):
     """Prepare UM dataset: interpolate data to common grid, drop redundant coordinates."""
     # Reference grid: use theta-grid for all variables
     lat = "latitude_t"
