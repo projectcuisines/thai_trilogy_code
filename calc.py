@@ -6,7 +6,7 @@ import xarray as xr
 from grid import EARTH_RADIUS
 
 
-__all__ = ("integral", "hdiv", "moist_static_energy")
+__all__ = ("integral", "hdiv", "mass_weighted_vertical_integral", "moist_static_energy")
 
 
 def _trapz(y, x, axis):
@@ -154,6 +154,53 @@ def hdiv(
     h_div = h_div.rename("horizontal_divergence")
     h_div.attrs = {"units": "s-1", "long_name": "horizontal_divergence"}
     return h_div
+
+
+def mass_weighted_vertical_integral(
+    xr_da, dim, coord=None, coord_type=None, rho=None, gravity=None
+):
+    """
+    Calculate a vertical integral with mass-weighting.
+
+    Parameters
+    ----------
+    xr_da: xarray.DataArray
+        Array to integrate.
+    dim: hashable
+        Dimension to use for the integration.
+    coord: xarray.DataArray, optional
+        Array of a coordinate to use for vertical integration.
+    coord_type: str, optional
+        Type of vertical coordinate ("height" or "pressure").
+    rho: xarray.DataArray, optional
+        Array of air density [kg m-3]. Required if `zcoord_type="height"`.
+    gravity: float
+        Gravity constant [m s-2]. Required if `zcoord_type="pressure"`.
+
+    Returns
+    -------
+    integ: xarray.DataArray
+        Vertical integral.
+    """
+    # Do the vertical integration
+    if coord_type == "height":
+        # Integrate along the height coordinate
+        if rho is None:
+            # weight by air density
+            raise ValueError(
+                "`rho` array is required to do weighting for 'height'-coordinate"
+            )
+        # if isinstance(coord, collections.abc.Hashable):
+        integ = integral(rho * xr_da, dim=dim, coord=coord)
+        # integ /= integral(rho, dim=dim, coord=coord)
+    elif coord_type == "pressure":
+        # Integrate along the pressure coordinate
+        if gravity is None:
+            raise ValueError(
+                "`gravity` is required to do weighting for 'pressure'-coordinate"
+            )
+        integ = -integral(xr_da, dim=dim, coord=coord) / gravity
+    return integ
 
 
 def moist_static_energy(temp, alt, spec_hum, c_p, gravity, latent_heat):
