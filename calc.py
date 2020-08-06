@@ -334,7 +334,7 @@ def vert_mer_mean_of_dse_flux(
         coord=zcoord,
         coord_type=zcoord_type,
         rho=rho,
-        gtavity=gravity,
+        gravity=gravity,
     )
 
     # Do the meridional averaging
