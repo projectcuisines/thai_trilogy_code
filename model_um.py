@@ -52,10 +52,7 @@ def calc_um_rei(um_ds, t_thresh=193.15):
     # Convert to microns
     rei *= 1e-6
     rei.rename("cloud_condensate_effective_radius")
-    rei.attrs = {
-        "long_name": "cloud_condensate_effective_radius",
-        "units": "micron"
-    }
+    rei.attrs = {"long_name": "cloud_condensate_effective_radius", "units": "micron"}
     return rei
 
 
@@ -104,12 +101,13 @@ def open_mf_um(files, main_time, rad_time, **kw_open):
     return xr.concat(dsets, main_time)
 
 
-def prep_um_ds(raw_ds):
+def prep_um_ds(raw_ds, vert_lev_miss_val="extrapolate"):
     """Prepare UM dataset: interpolate data to common grid, drop redundant coordinates."""
     # Reference grid: use theta-grid for all variables
-    lat = raw_ds.latitude_t
-    lon = raw_ds.longitude_t
-    alt = raw_ds.thlev_eta_theta
+    lat = "latitude_t"
+    lon = "longitude_t"
+    eta = "thlev_eta_theta"
+    alt = "thlev_zsea_theta"
     coords_to_drop = [
         "rholev_eta_rho",
         "rholev_C_rho",
@@ -131,9 +129,9 @@ def prep_um_ds(raw_ds):
             continue
         if d == "STASH_m01s00i002":
             var = raw_ds[d].interp(
-                latitude_cu=lat,
-                longitude_cu=lon,
-                rholev_eta_rho=alt,
+                latitude_cu=raw_ds[lat],
+                longitude_cu=raw_ds[lon],
+                rholev_eta_rho=raw_ds[eta],
                 kwargs={"fill_value": "extrapolate"},
             )
             for coord in coords_to_drop:
@@ -143,9 +141,9 @@ def prep_um_ds(raw_ds):
                     pass
         elif d == "STASH_m01s00i003":
             var = raw_ds[d].interp(
-                latitude_cv=lat,
-                longitude_cv=lon,
-                rholev_eta_rho=alt,
+                latitude_cv=raw_ds[lat],
+                longitude_cv=raw_ds[lon],
+                rholev_eta_rho=raw_ds[eta],
                 kwargs={"fill_value": "extrapolate"},
             )
             for coord in coords_to_drop:
@@ -156,5 +154,23 @@ def prep_um_ds(raw_ds):
         else:
             var = raw_ds[d]
         new_ds[d] = adjust_um_grid(var)
-    new_ds = xr.Dataset(new_ds).swap_dims({"thlev_eta_theta": "thlev_zsea_theta"})
-    return new_ds
+    ds = xr.Dataset(new_ds).swap_dims({eta: alt})
+    # Extrapolate or drop missing values at the top model level
+    new_ds = {}
+    if vert_lev_miss_val == "extrapolate":
+        for d in ds.data_vars:
+            if d in ["STASH_m01s16i004", "STASH_m01s30i113"]:
+                # if alt in ds[d].dims:
+                new_ds[d] = ds[d].interpolate_na(
+                    dim=alt, method="slinear", fill_value="extrapolate"
+                )
+            else:
+                new_ds[d] = ds[d]
+    elif vert_lev_miss_val == "drop":
+        for d in ds.data_vars:
+            if alt in ds[d].dims:
+                # Drop the topmost level
+                new_ds[d] = ds[d].isel(**{alt: slice(None, -1)})
+            else:
+                new_ds[d] = ds[d]
+    return xr.Dataset(new_ds)
