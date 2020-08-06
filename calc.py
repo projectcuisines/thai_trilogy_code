@@ -3,10 +3,16 @@ import dask.array as da
 
 import xarray as xr
 
-from grid import EARTH_RADIUS
+from grid import EARTH_RADIUS, meridional_mean
 
 
-__all__ = ("integral", "hdiv", "mass_weighted_vertical_integral", "moist_static_energy")
+__all__ = (
+    "integral",
+    "hdiv",
+    "mass_weighted_vertical_integral",
+    "moist_static_energy",
+    "vert_mer_mean_of_dse_flux",
+)
 
 
 def _trapz(y, x, axis):
@@ -243,3 +249,94 @@ def moist_static_energy(temp, alt, spec_hum, c_p, gravity, latent_heat):
     # dry and latent components
     mse = dse + lse
     return dse, lse, mse
+
+
+def vert_mer_mean_of_dse_flux(
+    temp,
+    alt,
+    spec_hum,
+    u,
+    v,
+    zcoord=None,
+    rho=None,
+    zcoord_type="height",
+    lon_name="longitude",
+    lat_name="latitude",
+    z_name="level_height",
+    c_p=1005,
+    gravity=9.80665,
+    latent_heat=2_501_000,
+    r_planet=6_371_200,
+):
+    """
+    Vertical and meridional integral of DSE flux.
+
+    Wrapper-function to calculate the horizontal divergence of the dry static energy flux,
+    integrated over latitudes and in the vertical.
+
+    Parameters
+    ----------
+    temp: xarray.DataArray
+        Array of temperature [K].
+    alt: xarray.DataArray
+        Array of model level heights (to calculate geopotential) [m].
+    spec_hum: xarray.DataArray
+        Array of specific humidity [kg kg-1].
+    u: xarray.DataArray
+        Array of zonal wind component [m s-1].
+    v: xarray.DataArray
+        Array of meridional wind component [m s-1].
+    zcoord: xarray.DataArray, optional
+        Array of a coordinate to use for vertical integration.
+    rho: xarray.DataArray, optional
+        Array of air density [kg m-3]. Required if `zcoord_type="height"`.
+    zcoord_type: str, optional
+        Type of vertical coordinate ("height" or "pressure").
+    lon_name: str, optional
+        Name of x-coordinate.
+    lat_name: str, optional
+        Name of y-coordinate.
+    z_name: str, optional
+        Name of z-coordinate.
+    c_p: float
+        Dry air specific heat capacity [m2 s-2 K-1].
+    gravity: float
+        Gravity constant [m s-2].
+    latent_heat: float
+        Latent heat of vaporization [J kg-1].
+    r_planet: float, optional
+        Radius of the planet [m]. Default is Earth's radius.
+
+    Returns
+    -------
+    flux_div_zm_int: xarray.DataArray
+        Array of vertical and meridional integral of DSE flux divergence.
+    """
+    # Calculate DSE
+    dse, _, _ = moist_static_energy(
+        temp=temp,
+        alt=alt,
+        spec_hum=spec_hum,
+        c_p=c_p,
+        gravity=gravity,
+        latent_heat=latent_heat,
+    )
+    # Calculate horizontal fluxes of DSE (zonal and meridional components)
+    # and their horizontal divergence in spherical coordinates
+    flux_div = hdiv(
+        u * dse, v * dse, lon_name=lon_name, lat_name=lat_name, r_planet=r_planet,
+    )
+
+    # Do the vertical integration
+    flux_div_z_int = mass_weighted_vertical_integral(
+        flux_div,
+        z_name,
+        coord=zcoord,
+        coord_type=zcoord_type,
+        rho=rho,
+        gtavity=gravity,
+    )
+
+    # Do the meridional averaging
+    flux_div_zm_int = meridional_mean(flux_div_z_int, lat_name=lat_name)
+    return flux_div_zm_int
