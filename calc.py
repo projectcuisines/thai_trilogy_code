@@ -157,8 +157,12 @@ def hdiv(
 
     # Sum the components and divide by {r cos \phi}
     h_div = (di_dlambda + djcos_dphi) / (r_planet * cos_lat)
+    # Interpolate to the original grid for consistency
+    h_div = h_div.interp(
+        **{lat_name: i_arr[lat_name], lon_name: i_arr[lon_name]},
+        kwargs={"fill_value": "extrapolate"},
+    )
     h_div = h_div.rename("horizontal_divergence")
-    h_div.attrs = {"units": "s-1", "long_name": "horizontal_divergence"}
     return h_div
 
 
@@ -334,7 +338,7 @@ def vert_mer_mean_of_dse_flux(
         coord=zcoord,
         coord_type=zcoord_type,
         rho=rho,
-        gtavity=gravity,
+        gravity=gravity,
     )
 
     # Do the meridional averaging

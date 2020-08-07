@@ -135,6 +135,14 @@ def add_cyclic_point_to_da(xr_da, coord_name):
     slicer[axis] = slice(0, 1)
     cyclic_xr_da = xr.concat((xr_da, xr_da[tuple(slicer)]), dim=coord_name)
     cyclic_xr_da[coord_name] = new_coord
+    # Rechunk array along the longitude coordinate to include the cyclic point
+    chnks = list(cyclic_xr_da.chunks)
+    chnk_idx = cyclic_xr_da.get_axis_num(coord_name)
+    try:
+        chnks[chnk_idx] = (chnks[chnk_idx][-2] + chnks[chnk_idx][-1],)
+    except IndexError:
+        pass
+    cyclic_xr_da = cyclic_xr_da.chunk(tuple(chnks))
     return cyclic_xr_da
 
 
