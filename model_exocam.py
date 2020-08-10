@@ -73,7 +73,7 @@ def calc_pres_exocam(ds, pos="mid"):
 
 
 def calc_virtual_temp_exocam(ds, mw_ratio=1.55423618, epsilon=287.058 / 461.52):
-    """
+    r"""
     Calculate virtual temperature from ExoCAM data.
 
     .. math::
@@ -147,8 +147,8 @@ def calc_alt_exocam(
     pres_m = calc_pres_exocam(ds, pos="mid")
     # Calculate pressure and interface points
     pres_i = calc_pres_exocam(ds, pos="inter")
-    p1 = pres_i[dict(ilev=slice(1, None))]  # lower interface (higher pressure)
-    p2 = pres_i[dict(ilev=slice(None, -1))]  # upper interface (lower pressure)
+    p1 = pres_i[dict(ilev=slice(None, -1))]  # lower interface (higher pressure)
+    p2 = pres_i[dict(ilev=slice(1, None))]  # upper interface (lower pressure)
     # Reassign the coordinate to mid-level points to be compatible
     # with the vertical coordinate of`temp_v`
     p1 = p1.rename(ilev="lev").assign_coords(lev=temp_v.lev)
@@ -156,15 +156,15 @@ def calc_alt_exocam(
     # Calculate the geopotential height thickness of each layer
     dz_int = (dry_air_gas_constant * temp_v / gravity) * da.log(p1 / p2)
     # Stack up layer thicknesses to get total height of lower interface layers
-    ilev_alt = reverse_along_dim(dz_int, "lev").cumsum(dim="lev")
+    ilev_alt = dz_int.cumsum(dim="lev")
     # Discard the last level height and insert zeros in the first level
     ilev_alt = ilev_alt.shift(lev=1).fillna(0.0)
     # Calculate geopotential height thickness between midpoints and interfaces
     dz_mid_int = (dry_air_gas_constant * temp_v / gravity) * da.log(p1 / pres_m)
     # Find midpoint height by adding half-layer thickness to the height of lower interface levels
-    lev_alt = ilev_alt + reverse_along_dim(dz_mid_int, "lev")
+    lev_alt = ilev_alt + dz_mid_int
     # Reverse level heights back to the original ordering
-    lev_alt = reverse_along_dim(lev_alt, "lev")
+    lev_alt = lev_alt
     # Update metadata
     lev_alt.rename("altitude")
     lev_alt.attrs = {"units": "m", "long_name": "altitude_at_mid_points"}
