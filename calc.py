@@ -11,7 +11,7 @@ __all__ = (
     "hdiv",
     "mass_weighted_vertical_integral",
     "moist_static_energy",
-    "vert_mer_mean_of_dse_flux",
+    "vert_mer_mean_of_mse_flux",
 )
 
 
@@ -213,83 +213,102 @@ def mass_weighted_vertical_integral(
     return integ
 
 
-def moist_static_energy(temp, alt, spec_hum, c_p, gravity, latent_heat):
+def moist_static_energy(
+    cmpnt="all",
+    temp=None,
+    alt=None,
+    spec_hum=None,
+    c_p=None,
+    gravity=None,
+    latent_heat=None,
+):
     """
-    Calculate moist static energy and its components.
+    Calculate moist static energy or its components.
 
     .. math::
         MSE = DSE + LSE = (c_p T + g z) + L_v q
 
     Parameters
     ----------
-    temp: xarray.DataArray
+    cmpnt: str, optional
+        Component of MSE to output: "dry" | "latent" | "moist"
+        By default, outputs all three of them: DSE, LSE, and their sum, MSE.
+    temp: xarray.DataArray, optional
         Array of temperature [K].
-    alt: xarray.DataArray
+    alt: xarray.DataArray, optional
         Array of level heights [m].
-    spec_hum: xarray.DataArray
+    spec_hum: xarray.DataArray, optional
         Array of specific humidity [kg kg-1].
-    c_p: float
+    c_p: float, optional
         Dry air specific heat capacity [m2 s-2 K-1].
-    gravity: float
+    gravity: float, optional
         Gravity constant [m s-2].
-    latent_heat: float
+    latent_heat: float, optional
         Latent heat of vaporization [J kg-1].
 
     Returns
     -------
-    dse: xarray.DataArray
-        Array of dry static energy.
-    lse: xarray.DataArray
-        Array of latent static energy.
-    mse: xarray.DataArray
-        Array of moist static energy (Sum of DSE and LSE).
+    list
+        List of data arrays of moist static energy or its components.
     """
-    # Geopotential height
-    ghgt = gravity * alt
-    # Dry component: c_p T + g z
-    dse = c_p * temp + ghgt
-    # latent component :
-    lse = latent_heat * spec_hum
-    # dry and latent components
-    mse = dse + lse
-    return dse, lse, mse
+    if cmpnt in ["dry", "moist", "all"]:
+        # Geopotential height
+        ghgt = gravity * alt
+        # Dry component: c_p T + g z
+        dse = c_p * temp + ghgt
+        if cmpnt == "dry":
+            return [dse]
+    if cmpnt in ["latent", "moist", "all"]:
+        # latent component :
+        lse = latent_heat * spec_hum
+        if cmpnt == "latent":
+            return [lse]
+    if cmpnt in ["moist", "all"]:
+        # dry and latent components
+        mse = dse + lse
+        if cmpnt == "moist":
+            return [mse]
+        elif cmpnt == "all":
+            return dse, lse, mse
 
 
-def vert_mer_mean_of_dse_flux(
-    temp,
-    alt,
-    spec_hum,
+def vert_mer_mean_of_mse_flux(
     u,
     v,
+    temp=None,
+    alt=None,
+    spec_hum=None,
     zcoord=None,
     rho=None,
     zcoord_type="height",
     lon_name="longitude",
     lat_name="latitude",
     z_name="level_height",
+    cmpnt="all",
     c_p=1005,
     gravity=9.80665,
     latent_heat=2_501_000,
     r_planet=6_371_200,
 ):
     """
-    Vertical and meridional integral of DSE flux.
+    Vertical and meridional integral of DSE, LSE and MSE fluxes.
 
-    Wrapper-function to calculate the horizontal divergence of the dry static energy flux,
+    Wrapper-function to calculate the horizontal divergence of the dry static energy,
+    latent static energy and moist static energy fluxes
     integrated over latitudes and in the vertical.
 
     Parameters
     ----------
-    temp: xarray.DataArray
-        Array of temperature [K].
-    alt: xarray.DataArray
-        Array of model level heights (to calculate geopotential) [m].
-    spec_hum: xarray.DataArray
-        Array of specific humidity [kg kg-1].
     u: xarray.DataArray
         Array of zonal wind component [m s-1].
-    v: xarray.DataArray
+    v: xarray.DataArray, optional
         Array of meridional wind component [m s-1].
+    temp: xarray.DataArray, optional
+        Array of temperature [K].
+    alt: xarray.DataArray, optional
+        Array of model level heights (to calculate geopotential) [m].
+    spec_hum: xarray.DataArray, optional
+        Array of specific humidity [kg kg-1].
     zcoord: xarray.DataArray, optional
         Array of a coordinate to use for vertical integration.
     rho: xarray.DataArray, optional
@@ -302,6 +321,9 @@ def vert_mer_mean_of_dse_flux(
         Name of y-coordinate.
     z_name: str, optional
         Name of z-coordinate.
+    cmpnt: str, optional
+        Component of MSE to output: "dry" | "latent" | "moist"
+        By default, outputs all three of them: DSE, LSE, and their sum, MSE.
     c_p: float
         Dry air specific heat capacity [m2 s-2 K-1].
     gravity: float
@@ -313,11 +335,16 @@ def vert_mer_mean_of_dse_flux(
 
     Returns
     -------
-    flux_div_zm_int: xarray.DataArray
-        Array of vertical and meridional integral of DSE flux divergence.
+    list
+        List of data arrays of the flux divergence of moist static energy or its components.
+
+    See also
+    --------
+    hdiv, moist_static_energy
     """
     # Calculate DSE
-    dse, _, _ = moist_static_energy(
+    mse_cmpnts = moist_static_energy(
+        cmpnt=cmpnt,
         temp=temp,
         alt=alt,
         spec_hum=spec_hum,
@@ -325,22 +352,27 @@ def vert_mer_mean_of_dse_flux(
         gravity=gravity,
         latent_heat=latent_heat,
     )
-    # Calculate horizontal fluxes of DSE (zonal and meridional components)
-    # and their horizontal divergence in spherical coordinates
-    flux_div = hdiv(
-        u * dse, v * dse, lon_name=lon_name, lat_name=lat_name, r_planet=r_planet,
-    )
-
-    # Do the vertical integration
-    flux_div_z_int = mass_weighted_vertical_integral(
-        flux_div,
-        z_name,
-        coord=zcoord,
-        coord_type=zcoord_type,
-        rho=rho,
-        gravity=gravity,
-    )
-
-    # Do the meridional averaging
-    flux_div_zm_int = meridional_mean(flux_div_z_int, lat_name=lat_name)
-    return flux_div_zm_int
+    results = []
+    for mse_cmpnt in mse_cmpnts:
+        # Calculate horizontal fluxes (zonal and meridional components)
+        # and their horizontal divergence in spherical coordinates
+        result = hdiv(
+            u * mse_cmpnt,
+            v * mse_cmpnt,
+            lon_name=lon_name,
+            lat_name=lat_name,
+            r_planet=r_planet,
+        )
+        # Do the vertical integration
+        result = mass_weighted_vertical_integral(
+            result,
+            z_name,
+            coord=zcoord,
+            coord_type=zcoord_type,
+            rho=rho,
+            gravity=gravity,
+        )
+        # Do the meridional averaging
+        result = meridional_mean(result, lat_name=lat_name)
+        results.append(result)
+    return results
