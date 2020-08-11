@@ -1,9 +1,11 @@
 """Science diagnostics."""
 import dask.array as da
 
+import numpy as np
+
 import xarray as xr
 
-from grid import EARTH_RADIUS, meridional_mean
+from grid import EARTH_RADIUS, meridional_mean, spatial_mean
 
 
 __all__ = (
@@ -11,6 +13,9 @@ __all__ = (
     "hdiv",
     "mass_weighted_vertical_integral",
     "moist_static_energy",
+    "nondim_rossby_deformation_radius",
+    "rossby_deformation_radius",
+    "scale_height",
     "vert_mer_mean_of_mse_flux",
 )
 
@@ -377,144 +382,145 @@ def vert_mer_mean_of_mse_flux(
         results.append(result)
     return results
 
-def scaleheight(
-	Tsurf_stm,
-	r_planet=None,
-	mw_dryair = None
-	gravity = None,
-	mgas_constant =None,
-	):
-	"""
-    Calculate the atmopheric scale height
-    H = R * Ts / M * g
-    
+
+def nondim_rossby_deformation_radius(
+    temp,
+    r_planet=EARTH_RADIUS,
+    period=86_400,
+    gravity=9.81,
+    mw_dryair=28.97 * 1e-3,
+    mgas_constant=8.314462,
+    lon_name="longitude",
+    lat_name="latitude",
+    time_name="time",
+):
+
+    """
+    Estimate the circulation regime via the non-dimensional Rossby radius of deformation.
+
+    For details, see eq. (1) in https://iopscience.iop.org/article/10.3847/1538-4357/ab9a4b
+
     Parameters
     ----------
-    Tsurf_stm : xarray.DataArray
-    	spatial and temporal mean of surface temperature [K]  
+    temp : xarray.DataArray
+        Temperature proxy, e.g. surface temperature [K].
     r_planet: float, optional
-        Radius of the planet (m). Default is Earth's radius.
-    mw_dryair : float, optional  
-    	Mean molecular weight of dry air [kg mol-1] 
+        Radius of the planet [m]. Default is Earth's radius.
+    period: float, optional
+        Period of the rotation [s]. Default is Earth's rotation period.
     gravity: float
-        Gravity constant [m s-2].      
-	mgas_constant : float, optional
-        Molecular gas constant [J kg-1 mol-1].    
- 		
-    	
+        Gravity constant [m s-2].
+    mw_dryair : float, optional
+        Mean molecular weight of dry air [kg mol-1].
+    mgas_constant : float, optional
+        Molecular gas constant [J kg-1 mol-1].
+    lon_name: str, optional
+        Name of x-coordinate.
+    lat_name: str, optional
+        Name of y-coordinate.
+    time_name: str, optional
+        Name of t-coordinate.
+
     Returns
     -------
-    H: xarray.DataArray
-        Atmospheric scale height [m]  of shape (time).
+    ratio: float
+        Rossby radius of deformation divided by the radius of the planet.
     """
-    
-    H = Tsurf_stm * mgas_constant / mw_dryair * gravity 
-    return H
 
-def rossby(
-	Tsurf_stm = None
-	period=None,
-	r_planet=None,
-	):
- 	"""
-    Calculate the Rossby radius of deformation following
-    https://iopscience.iop.org/article/10.3847/1538-4357/ab9a4b
-    equation (1)
-    
+    temp_mean = spatial_mean(temp, lon_name=lon_name, lat_name=lat_name).mean(
+        dim=time_name
+    )
+
+    ratio = (
+        rossby_deformation_radius(
+            temp=temp_mean,
+            period=period,
+            r_planet=r_planet,
+            gravity=gravity,
+            mw_dryair=mw_dryair,
+            mgas_constant=mgas_constant,
+        )
+        / r_planet
+    )
+    return ratio
+
+
+def rossby_deformation_radius(
+    temp,
+    period=86_400,
+    r_planet=EARTH_RADIUS,
+    gravity=9.81,
+    mw_dryair=28.97 * 1e-3,
+    mgas_constant=8.314462,
+):
+    """
+    Calculate the Rossby radius of deformation.
+
+    For details, see eq. (1) in https://iopscience.iop.org/article/10.3847/1538-4357/ab9a4b
+
     Parameters
     ----------
+    temp : xarray.DataArray
+        Estimate of temperature, e.g. mean surface temperature [K].
     r_planet: float, optional
-        Radius of the planet (m). Default is Earth's radius.
+        Radius of the planet [m]. Default is Earth's radius.
     period: float, optional
-    	Period of the rotation (s). Default is Earth's radius.    	   
-    omega: xarray.DataArray
-    	Rotation rate (rad/s)
-    beta:  xarray.DataArray
-    	Coriolis parameter at the equator
-    	
+        Period of the rotation [s]. Default is Earth's radius.
+    gravity: float
+        Gravity constant [m s-2].
+    mw_dryair : float, optional
+        Mean molecular weight of dry air [kg mol-1].
+    mgas_constant : float, optional
+        Molecular gas constant [J kg-1 mol-1].
+
     Returns
     -------
     radius: xarray.DataArray
         Rossby radius of deformation of shape (time).
     """
-    omega = 2*np.pi / period
-    beta = 2 * omega / r_planet) 
+    omega = 2 * np.pi / period
+    beta = 2 * omega / r_planet
 
-    H = scaleheight(
-    Tsurf_stm = Tsurf_stm,
-    r_planet=r_planet,
-    mw_dryair = mw_dryair,
-    gravity = gravity 
-    mgas_constant = mgas_constant,    
+    sc_hgt = scale_height(
+        temp,
+        r_planet=r_planet,
+        gravity=gravity,
+        mw_dryair=mw_dryair,
+        mgas_constant=mgas_constant,
     )
+    radius = ((gravity * sc_hgt) ** 0.5 / (2 * beta)) ** 0.5
+    return radius
 
-    radius = da.sqrt((da.sqrt(gplanet*H))/(2*beta))
 
-    return radius 
-    
-def regime(Tsurf,
-	r_planet=6_371_200,
-	period=86_400
-	mw_dryair = 28.97*1e-3
-	gravity = 9.81,
-	mgas_constant = 8.314462,
-	lon_name="longitude",
-    lat_name="latitude",
-    time_name="time",
-    ):
-    
-     """
-    Estimate the circulation regime following
-    https://iopscience.iop.org/article/10.3847/1538-4357/ab9a4b
-    equation (1)
+def scale_height(
+    temp,
+    r_planet=EARTH_RADIUS,
+    gravity=9.81,
+    mw_dryair=28.97 * 1e-3,
+    mgas_constant=8.314462,
+):
+    r"""
+    Calculate the atmopheric scale height.
+
+    .. math::
+        H = R * T / (M * g)
 
     Parameters
     ----------
-    Tsurf : xarray.DataArray
-    	surface temperature [K]
-    Tsurf_sm : xarray.DataArray
-    	spatial mean of surface temperature [K]
-    Tsurf_stm : xarray.DataArray
-    	spatial and temporal mean of surface temperature [K]  
+    temp : xarray.DataArray
+        Estimate of temperature, e.g. mean surface temperature [K].
     r_planet: float, optional
-        Radius of the planet (m). Default is Earth's radius.
-    period: float, optional
-        Period of the rotation (s). Default is Earth's radius.    	 
-	mgas_constant : float, optional
-        Molecular gas constant [J kg-1 mol-1].
-    mw_dryair : float, optional  
-    	Mean molecular weight of dry air [kg mol-1] 
+        Radius of the planet [m]. Default is Earth's radius.
     gravity: float
-        Gravity constant [m s-2].   
-    lon_name: str, optional
-        Name of x-coordinate.
-    lat_name: str, optional
-        Name of y-coordinate.   
-    time_name: str, optional
-        Name of t-coordinate.    
-            
+        Gravity constant [m s-2].
+    mw_dryair : float, optional
+        Mean molecular weight of dry air [kg mol-1].
+    mgas_constant : float, optional
+        Molecular gas constant [J kg-1 mol-1].
+
     Returns
     -------
-    ratio: float
-        ratio of the rossby radius of deformation by the 
-        radiu of the planet.
+    xarray.DataArray
+        Atmospheric scale height [m] of the same shape as `temp`.
     """
-    
-    Tsurf_sm = spatial_mean(Tsurf,  
-    	lon_name="longitude",
-    	lat_name="latitude")
-    	
-    Tsurf_stm	= Tsurf_sm.mean(dim=time_name)
-    
-    ratio = rossby(Tsurf_stm=Tsurf_stm,
-    period = period,
-    r_planet = r_planet,
-    )/(r_planet)
-
-    if ratio > 1: 
-        print('slow rotator')
-    elif ratio < 1:
-        print('rapid rotator')
-    print(
-         "{:3.2f}".format(ratio.values))    
-    return ratio
+    return temp * mgas_constant / (mw_dryair * gravity)
