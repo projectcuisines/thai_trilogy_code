@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Utilities for the Unified Model output."""
-import dask.array as da
-
-import xarray as xr
-
+"""Utilities for the ROCKE3D output."""
 from grid import reverse_along_dim, roll_da_to_pm180
 
 
-__all__ = ("adjust_rocke3d_grid")
+__all__ = ("adjust_rocke3d_grid",)
 
 
 def adjust_rocke3d_grid(darr, lon_name="lon", lat_name="lat"):
@@ -25,4 +21,3 @@ def adjust_rocke3d_grid(darr, lon_name="lon", lat_name="lat"):
             out.assign_coords(**{lon_name: out[lon_name] + 180}), lon_name=lon_name
         )
     return out
-
