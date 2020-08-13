@@ -103,7 +103,7 @@ def brunt_vaisala_frequency(
         temp, press, gas_constant=gas_constant, c_p=c_p, p_ref=p_ref,
     )
 
-    bv_freq = ((gravity / theta) * theta.differentiate(dim=lev_name)) ** 0.5
+    bv_freq = ((gravity / theta) * theta.differentiate(lev_name)) ** 0.5
     bv_freq = bv_freq.rename("air_potential_temperature")
     bv_freq.attrs.update({"units": "K"})
     return bv_freq
@@ -506,6 +506,7 @@ def nondim_rossby_deformation_radius(
             gravity=gravity,
             mw_dryair=mw_dryair,
             mgas_constant=mgas_constant,
+            lev_name=lev_name,
         )
         rossby_def_rad = spatial_mean(
             rossby_def_rad, lon_name=lon_name, lat_name=lat_name
