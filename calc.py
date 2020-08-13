@@ -9,12 +9,15 @@ from grid import EARTH_RADIUS, meridional_mean, spatial_mean
 
 
 __all__ = (
+    "brunt_vaisala_frequency",
     "integral",
     "hdiv",
     "mass_weighted_vertical_integral",
     "moist_static_energy",
     "nondim_rossby_deformation_radius",
-    "rossby_deformation_radius",
+    "potential_temperature",
+    "rossby_deformation_radius_isothermal",
+    "rossby_deformation_radius_stratified",
     "scale_height",
     "vert_mer_mean_of_mse_flux",
 )
@@ -59,6 +62,51 @@ def _integrate_generic(ds, coord, dim):
     return ds._replace_with_new_dims(
         variables, coord_names=coord_names, indexes=indexes
     )
+
+
+def brunt_vaisala_frequency(
+    temp,
+    press,
+    gas_constant=287.058,
+    c_p=1039,
+    p_ref=100_000,
+    gravity=9.80665,
+    lev_name="altitude",
+):
+    """
+    Calculate Brunt–Väisälä frequency.
+
+    Parameters
+    ----------
+    temp : xarray.DataArray
+        Atmospheric temperature [K].
+    press : xarray.DataArray
+        Atmospheric pressure [Pa].
+    gas_constant : float, optional
+        Specific gas constant [J kg-1 K-1].
+    c_p: float, optional
+        Dry air specific heat capacity [m2 s-2 K-1].
+    p_ref : float, optional
+        Standard reference pressure [Pa].
+    gravity: float, optional
+        Gravity constant [m s-2].
+    lev_name: str, optional
+        Name of y-coordinate.
+
+    Returns
+    -------
+    bv_freq: xarray.DataArray
+        Brunt-Väisälä frequency [s-1]
+    """
+    # Compute potential temperature from real temperature and pressure
+    theta = potential_temperature(
+        temp, press, gas_constant=gas_constant, c_p=c_p, p_ref=p_ref,
+    )
+
+    bv_freq = ((gravity / theta) * theta.differentiate(dim=lev_name)) ** 0.5
+    bv_freq = bv_freq.rename("air_potential_temperature")
+    bv_freq.attrs.update({"units": "K"})
+    return bv_freq
 
 
 def integral(xr_da, dim, coord=None, datetime_unit=None):
@@ -386,6 +434,7 @@ def vert_mer_mean_of_mse_flux(
 def nondim_rossby_deformation_radius(
     method,
     temp,
+    press=None,
     r_planet=EARTH_RADIUS,
     period=86_400,
     gravity=9.81,
@@ -393,6 +442,7 @@ def nondim_rossby_deformation_radius(
     mgas_constant=8.314462,
     lon_name="longitude",
     lat_name="latitude",
+    lev_name="level_height",
     time_name="time",
 ):
 
@@ -403,12 +453,14 @@ def nondim_rossby_deformation_radius(
 
     Parameters
     ----------
-    method: float,
-        method to calculate the rossby deformation radius.
-        =1 : eq. (1) in https://iopscience.iop.org/article/10.3847/1538-4357/ab9a4b
-        =2 : eq. (2) in https://iopscience.iop.org/article/10.3847/1538-4357/ab9a4b
+    method: str
+        Method to calculate the rossby deformation radius.
+        "isothermal": eq. (1) in https://iopscience.iop.org/article/10.3847/1538-4357/ab9a4b
+        "stratified": eq. (2) in https://iopscience.iop.org/article/10.3847/1538-4357/ab9a4b
     temp : xarray.DataArray
         Temperature proxy, e.g. surface temperature [K].
+    press : xarray.DataArray, optional
+        Atmospheric pressure [Pa]. Required for method="stratified".
     r_planet: float, optional
         Radius of the planet [m]. Default is Earth's radius.
     period: float, optional
@@ -423,6 +475,8 @@ def nondim_rossby_deformation_radius(
         Name of x-coordinate.
     lat_name: str, optional
         Name of y-coordinate.
+    lev_name: str, optional
+        Name of z-coordinate.
     time_name: str, optional
         Name of t-coordinate.
 
@@ -431,39 +485,64 @@ def nondim_rossby_deformation_radius(
     ratio: float
         Rossby radius of deformation divided by the radius of the planet.
     """
-
-    temp_mean = spatial_mean(temp, lon_name=lon_name, lat_name=lat_name).mean(
-        dim=time_name
-    )
-    if method == 1:
-        ratio = (
-            rossby_deformation_radius(
-                temp=temp_mean,
-                period=period,
-                r_planet=r_planet,
-                gravity=gravity,
-                mw_dryair=mw_dryair,
-                mgas_constant=mgas_constant,
-            )
-            / r_planet
+    if method == "isothermal":
+        temp_mean = spatial_mean(temp, lon_name=lon_name, lat_name=lat_name).mean(
+            dim=time_name
         )
-    else:
-        ratio = (
-            rossby_deformation_radius_with_N(
-                temp=temp_mean,
-                period=period,
-                r_planet=r_planet,
-                gravity=gravity,
-                mw_dryair=mw_dryair,
-                mgas_constant=mgas_constant,
-            )
-            / r_planet
+        rossby_def_rad = rossby_deformation_radius_isothermal(
+            temp=temp_mean,
+            period=period,
+            r_planet=r_planet,
+            gravity=gravity,
+            mw_dryair=mw_dryair,
+            mgas_constant=mgas_constant,
         )
-            
-    return ratio
+    elif method == "stratified":
+        rossby_def_rad = rossby_deformation_radius_stratified(
+            temp=temp,
+            press=press,
+            period=period,
+            r_planet=r_planet,
+            gravity=gravity,
+            mw_dryair=mw_dryair,
+            mgas_constant=mgas_constant,
+        )
+        rossby_def_rad = spatial_mean(
+            rossby_def_rad, lon_name=lon_name, lat_name=lat_name
+        ).mean(dim=[time_name, lev_name])
+
+    return rossby_def_rad / r_planet
 
 
-def rossby_deformation_radius(
+def potential_temperature(
+    temp, press, gas_constant=287.058, c_p=1039, p_ref=100_000,
+):
+    """
+    Calculate potential temperature
+    ----------
+    temp : xarray.DataArray
+        Atmospheric temperature [K].
+    press : xarray.DataArray
+        Atmospheric pressure [Pa].
+    gas_constant : float, optional
+        Specific gas constant [J kg-1 K-1].
+    c_p: float, optional
+        Dry air specific heat capacity [m2 s-2 K-1].
+    p_ref: float, optional
+        Standard reference pressure [Pa].
+
+    Returns
+    -------
+    theta: xarray.DataArray
+        Atmospheric potential temperature [K]
+    """
+    theta = temp * (p_ref / press) ** (gas_constant / c_p)
+    theta = theta.rename("brunt_vaisala_frequency")
+    theta.attrs.update({"units": "s-1"})
+    return theta
+
+
+def rossby_deformation_radius_isothermal(
     temp,
     period=86_400,
     r_planet=EARTH_RADIUS,
@@ -510,6 +589,73 @@ def rossby_deformation_radius(
     return radius
 
 
+def rossby_deformation_radius_stratified(
+    temp,
+    press,
+    period=86_400,
+    r_planet=EARTH_RADIUS,
+    gravity=9.81,
+    mw_dryair=28.97 * 1e-3,
+    mgas_constant=8.314462,
+    c_p=1039,
+    p_ref=100_000,
+    lev_name="level_height",
+):
+    """
+    Calculate the Rossby radius of deformation.
+    For details, see eq. (2) in https://iopscience.iop.org/article/10.3847/1538-4357/ab9a4b
+
+    Parameters
+    ----------
+    temp : xarray.DataArray
+        Estimate of temperature, e.g. mean surface temperature [K].
+    press : xarray.DataArray
+        Atmospheric pressure [Pa].
+    r_planet: float, optional
+        Radius of the planet [m]. Default is Earth's radius.
+    period: float, optional
+        Period of the rotation [s]. Default is Earth's radius.
+    gravity: float
+        Gravity constant [m s-2].
+    mw_dryair : float, optional
+        Mean molecular weight of dry air [kg mol-1].
+    mgas_constant : float, optional
+        Molecular gas constant [J kg-1 mol-1].
+    c_p: float, optional
+        Dry air specific heat capacity [m2 s-2 K-1].
+    p_ref : float, optional
+        Standard reference pressure [Pa].
+    lev_name: str, optional
+        Name of z-coordinate.
+
+    Returns
+    -------
+    radius: xarray.DataArray
+        Rossby radius of deformation.
+    """
+    omega = 2 * np.pi / period
+    beta = 2 * omega / r_planet
+
+    sc_hgt = scale_height(
+        temp,
+        r_planet=r_planet,
+        gravity=gravity,
+        mw_dryair=mw_dryair,
+        mgas_constant=mgas_constant,
+    )
+    bv_freq = brunt_vaisala_frequency(
+        temp,
+        press,
+        gas_constant=mgas_constant / mw_dryair,
+        c_p=c_p,
+        p_ref=p_ref,
+        gravity=gravity,
+        lev_name=lev_name,
+    )
+    radius = ((bv_freq * sc_hgt) / (2 * beta)) ** 0.5
+    return radius
+
+
 def scale_height(
     temp,
     r_planet=EARTH_RADIUS,
@@ -542,167 +688,3 @@ def scale_height(
         Atmospheric scale height [m] of the same shape as `temp`.
     """
     return temp * mgas_constant / (mw_dryair * gravity)
-
-
-def potential_temperature(
-    temp,
-    press,
-    mgas_constant=8.3144626181532,
-    c_p=1039,
-    press0=100_000,
-):
-    """
-    Calculate potential temperature
-    ----------
-    temp : xarray.DataArray
-        Atmospheric temperature [K].
-    press : xarray.DataArray
-        Atmospheric pressure [K].    
-    mgas_constant : float, optional
-        Molecular gas constant [J kg-1 mol-1].
-    c_p: float, optional
-        Dry air specific heat capacity [m2 s-2 K-1].
-    press0 : float, optional
-        Standard reference pressure [Pa].   
-        
-    Returns
-    -------
-    theta: xarray.DataArray
-        Atmospheric potential temperature [K]
-        Four dimension array (time,lev,lon,lat).
-    """
-    theta = temp * (press0 / press)**(mgas_constant / c_p)
-    
-    return theta
-
-def Brunt–Väisälä_frequency(
-    temp,
-    press,
-    mgas_constant=8.3144626181532,
-    c_p=1039,
-    press0=100_000,
-    gravity = 9.80665,
-    lon_name=lon_name,
-    lat_name=lat_name,
-    lev_name=lev_name,
-    time_name=time_name,
-):
-    """
-    Calculate Brunt–Väisälä frequency
-       ----------
-    temp : xarray.DataArray
-        Atmospheric temperature [K].
-    press : xarray.DataArray
-        Atmospheric pressure [K].    
-    mgas_constant : float, optional
-        Molecular gas constant [J kg-1 mol-1].
-    c_p: float, optional
-        Dry air specific heat capacity [m2 s-2 K-1].
-    press0 : float, optional
-        Standard reference pressure [Pa].   
-    gravity: float, optional
-        Gravity constant [m s-2].
-    lon_name: str, optional
-        Name of x-coordinate.
-    lat_name: str, optional
-        Name of y-coordinate.
-    lev_name: str, optional
-        Name of y-coordinate.
-    time_name: str, optional
-        Name of t-coordinat
-    Returns
-    -------
-    N_mean: 1D float
-        Brunt-Väisälä frequency [rad.s-1]
-        
-    """
-    theta = potential_temperature(
-    temp,
-    press,
-    mgas_constant=mgas_constant,
-    c_p=c_p,
-    press0=press0,)
-    
-    #Compute the potential temperature
-    theta_mean = spatial_mean(theta, lon_name=lon_name, lat_name=lat_name).mean(
-        dim=time_name
-    )
-    #Restrict to the free atmosphere
-    theta_mean = theta_mean[dict(lev_name=slice(15, None))]
-    
-    N = (gravity / theta_mean) * theta_mean.differentiate(lev_name)
-    
-    #Vertical mean of N
-    N_mean = N.mean(dim=lev_name)
-    
-    return N_mean
-
-
- def rossby_deformation_radius_with_N(
-    temp,
-    period=86_400,
-    r_planet=EARTH_RADIUS,
-    gravity=9.81,
-    mw_dryair=28.97 * 1e-3,
-    mgas_constant=8.314462,
-    lon_name=lon_name,
-    lat_name=lat_name,
-    lev_name=lev_name,
-    time_name=time_name,
-):
-    """
-    Calculate the Rossby radius of deformation.
-    For details, see eq. (2) in https://iopscience.iop.org/article/10.3847/1538-4357/ab9a4b
-    Parameters
-    ----------
-    temp : xarray.DataArray
-        Estimate of temperature, e.g. mean surface temperature [K].
-    r_planet: float, optional
-        Radius of the planet [m]. Default is Earth's radius.
-    period: float, optional
-        Period of the rotation [s]. Default is Earth's radius.
-    gravity: float
-        Gravity constant [m s-2].
-    mw_dryair : float, optional
-        Mean molecular weight of dry air [kg mol-1].
-    mgas_constant : float, optional
-        Molecular gas constant [J kg-1 mol-1].
-    lon_name: str, optional
-        Name of x-coordinate.
-    lat_name: str, optional
-        Name of y-coordinate.
-    lev_name: str, optional
-        Name of y-coordinate.
-    time_name: str, optional
-        Name of t-coordinat     
-    Returns
-    -------
-    radius: xarray.DataArray
-        Rossby radius of deformation of shape (time).
-    """
-    omega = 2 * np.pi / period
-    beta = 2 * omega / r_planet
-
-    sc_hgt = scale_height(
-        temp,
-        r_planet=r_planet,
-        gravity=gravity,
-        mw_dryair=mw_dryair,
-        mgas_constant=mgas_constant,
-    )
-    
-    N = Brunt–Väisälä_frequency(
-        temp,
-        press,
-        mgas_constant=mgas_constant,
-        c_p=c_p,
-        press0=100_000,
-        gravity = gravity,
-        lon_name=lon_name,
-        lat_name=lat_name,
-        lev_name=lev_name,
-        time_name=time_name
-):
-        
-    radius = ((N * sc_hgt) / (2 * beta)) ** 0.5
-    return radius
