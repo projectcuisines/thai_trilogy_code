@@ -2,12 +2,21 @@
 """Utilities for the Unified Model output."""
 import dask.array as da
 
+import numpy as np
+
 import xarray as xr
 
 from grid import reverse_along_dim, roll_da_to_pm180
 
 
-__all__ = ("adjust_um_grid", "calc_um_ocean_frac", "open_mf_um", "prep_um_ds")
+__all__ = (
+    "adjust_um_grid",
+    "calc_um_ocean_frac",
+    "calc_um_rei",
+    "calc_um_rel",
+    "open_mf_um",
+    "prep_um_ds",
+)
 
 
 def adjust_um_grid(darr):
@@ -52,35 +61,42 @@ def calc_um_rei(um_ds, t_thresh=193.15):
     # Convert to microns
     rei *= 1e-6
     rei.rename("ice_cloud_condensate_effective_radius")
-    rei.attrs = {"long_name": "ice_cloud_condensate_effective_radius", "units": "micron"}
+    rei.attrs = {
+        "long_name": "ice_cloud_condensate_effective_radius",
+        "units": "micron",
+    }
     return rei
 
-def calc_um_rel(liq,
-	mw_dryair = 28.97*1e3,
-):   
-	 """     Calculation of the effective radius of liquid water
-	 following: 
-	 r_eff = ( 3 * rho_air * qcl / ( 4 * pi * rho_water * 0.8 * 1e8 ))**(1./3.)
-     corresponding to Eq 14 
-     in https://journals.ametsoc.org/jas/article/51/13/1823/23387/The-Measurement-and-Parameterization-of-Effective
-     Parameters
+
+def calc_um_rel(liq, mw_dryair=28.97 * 1e3):
+    r"""
+    Calculate the effective radius of liquid water cloud particles.
+
+    .. math::
+         r_{eff} = ( 3 * \rho_{air} * q_{cl} / (4\pi \rho_{water}\cdot 0.8\times 10^{8} ))^{1/3}
+
+    References
+    ----------
+    Eq. 14 in https://doi.org/10.1175/1520-0469(1994)051<1823:TMAPOE>2.0.CO;2
+
+    Parameters
     ----------
     liq: xarray.DataArray
-    	mass mixing ratio of liquid [kg/kg].
+        Mass mixing ratio of liquid cloud [kg/kg].
     mw_dryair : float, optional
         Mean molecular weight of dry air [kg mol-1].
-    
-     Returns
+
+    Returns
     -------
-    rei: xarray.DataArray
-        Ice effective radius [um], dimension (time,lev,lat,lon).
-    """  
- 
-	rel = (3 * mw_dryair * liq / (4*np.pi*1000*0.8*1e8))**(1./3.)
-	
-	rel.rename("liquid_cloud_condensate_effective_radius")
-    rel.attrs = {"long_name": "liquid_cloud_condensate_effective_radius", "units": "micron"}
-    
+    rel: xarray.DataArray
+        Liquid particle effective radius [um].
+    """
+    rel = (3 * mw_dryair * liq / (4 * np.pi * 1000 * 0.8 * 1e8)) ** (1.0 / 3.0)
+    rel = rel.rename("liquid_cloud_condensate_effective_radius")
+    rel.attrs = {
+        "long_name": "liquid_cloud_condensate_effective_radius",
+        "units": "micron",
+    }
     return rel
 
 
