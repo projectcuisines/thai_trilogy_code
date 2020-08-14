@@ -86,15 +86,13 @@ def calc_rocke3d_rei(rocke3d_ds,
     rei.attrs = {"long_name": "ice_cloud_condensate_effective_radius", "units": "micron"}
     return rei
     
- def calc_rocke3d_rel(liq,
-	mw_dryair = 28.97*1e3,
-):   
-	 """     Calculation of the effective radius of liquid water
-	 following: 
-	 r_eff = ( 3 * rho_air * qcl / ( 4 * pi * rho_water * 0.8 * 1e8 ))**(1./3.)
-     corresponding to Eq 14 
-     in https://journals.ametsoc.org/jas/article/51/13/1823/23387/The-Measurement-and-Parameterization-of-Effective
-     Parameters
+def calc_rocke3d_rel(liq,mw_dryair = 28.97*1e3):   
+	"""     Calculation of the effective radius of liquid water
+	following: 
+	r_eff = ( 3 * rho_air * qcl / ( 4 * pi * rho_water * 0.8 * 1e8 ))**(1./3.)
+    corresponding to Eq 14 
+    in https://journals.ametsoc.org/jas/article/51/13/1823/23387/The-Measurement-and-Parameterization-of-Effective
+    Parameters
     ----------
     liq: xarray.DataArray
     	mass mixing ratio of liquid [kg/kg].
@@ -110,6 +108,5 @@ def calc_rocke3d_rei(rocke3d_ds,
 	rel = (3 * mw_dryair * liq / (4*np.pi*1000*0.8*1e8))**(1./3.)
 	
 	rel.rename("liquid_cloud_condensate_effective_radius")
-    rel.attrs = {"long_name": "liquid_cloud_condensate_effective_radius", "units": "micron"}
-    
-    return rel
+	rel.attrs = {"long_name": "liquid_cloud_condensate_effective_radius", "units": "micron"}
+	return rel
