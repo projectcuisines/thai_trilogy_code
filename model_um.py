@@ -51,9 +51,37 @@ def calc_um_rei(um_ds, t_thresh=193.15):
     rei = is_cld_ice * (-353.613 + 1.868 * air_temp) / 2
     # Convert to microns
     rei *= 1e-6
-    rei.rename("cloud_condensate_effective_radius")
-    rei.attrs = {"long_name": "cloud_condensate_effective_radius", "units": "micron"}
+    rei.rename("ice_cloud_condensate_effective_radius")
+    rei.attrs = {"long_name": "ice_cloud_condensate_effective_radius", "units": "micron"}
     return rei
+
+def calc_um_rel(liq,
+	mw_dryair = 28.97*1e3,
+):   
+	 """     Calculation of the effective radius of liquid water
+	 following: 
+	 r_eff = ( 3 * rho_air * qcl / ( 4 * pi * rho_water * 0.8 * 1e8 ))**(1./3.)
+     corresponding to Eq 14 
+     in https://journals.ametsoc.org/jas/article/51/13/1823/23387/The-Measurement-and-Parameterization-of-Effective
+     Parameters
+    ----------
+    liq: xarray.DataArray
+    	mass mixing ratio of liquid [kg/kg].
+    mw_dryair : float, optional
+        Mean molecular weight of dry air [kg mol-1].
+    
+     Returns
+    -------
+    rei: xarray.DataArray
+        Ice effective radius [um], dimension (time,lev,lat,lon).
+    """  
+ 
+	rel = (3 * mw_dryair * liq / (4*np.pi*1000*0.8*1e8))**(1./3.)
+	
+	rel.rename("liquid_cloud_condensate_effective_radius")
+    rel.attrs = {"long_name": "liquid_cloud_condensate_effective_radius", "units": "micron"}
+    
+    return rel
 
 
 def open_mf_um(files, main_time, rad_time, **kw_open):
