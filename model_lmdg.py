@@ -3,7 +3,8 @@
 import dask.array as da
 
 
-__all__ = ("calc_alt_lmdg",  "calc_virtual_temp_lmdg")
+__all__ = ("calc_alt_lmdg", "calc_virtual_temp_lmdg")
+
 
 def calc_virtual_temp_lmdg(ds, mw_ratio=1.55423618, epsilon=287.058 / 461.52):
     r"""
@@ -15,7 +16,7 @@ def calc_virtual_temp_lmdg(ds, mw_ratio=1.55423618, epsilon=287.058 / 461.52):
     Parameters
     ----------
     ds: xarray.Dataset
-        Model dataset with the required variables: "Q" and "T".
+        Model dataset with the required variables: "h2o_vap" and "temp".
     mw_ratio: float, optional
         Ratio of dry air and condensible species molecular weights.
         By default, assumes a N2-dominated atmosphere with H2O as the condensible species.
@@ -48,16 +49,17 @@ def calc_alt_lmdg(
     condens_gas_constant=461.52,
     gravity=9.12,
 ):
-    """
+    r"""
     Derive a 3D array of altiude for LMD-G using the hypsometric equation.
     .. math::
         h = \frac{R T_v}{g} ln{ \frac{p_1}{p_2} }
     Parameters
     ----------
     ds: xarray.Dataset
-        Dataset with the required variables: "T", "Q", "hyam", "hybm","hyai", "hybi", "P0", "PS".
+        Dataset with the required variables:
+        "temp", "h2o_vap", "aps", "bps", "ap", "bp", "ps".
     case: str, optional
-        THAI case. 
+        THAI case.
     mw_ratio: float, optional
         Ratio of dry air and condensible species molecular weights.
         By default, assumes a N2-dominated atmosphere with H2O as the condensible species.
