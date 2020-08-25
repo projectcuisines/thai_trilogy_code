@@ -26,6 +26,7 @@ __all__ = (
     "rossby_deformation_radius_stratified",
     "scale_height",
     "vert_mer_mean_of_mse_flux",
+    "zonal_mass_streamfunction"
 )
 
 
