@@ -5,7 +5,13 @@ import numpy as np
 
 import xarray as xr
 
-from grid import EARTH_RADIUS, meridional_mean, spatial_mean, zonal_mean
+from grid import (
+    EARTH_RADIUS,
+    meridional_mean,
+    reverse_along_dim,
+    spatial_mean,
+    zonal_mean,
+)
 
 
 __all__ = (
@@ -749,6 +755,7 @@ def zonal_mass_streamfunction(
     u_mean_star = u_lattmean - u_tmean
 
     deltap = press.mean(dim=time_name).diff(dim=lev_name)
-    walker = const * u_mean_star * deltap.interp(**{lev_name: u_mean_star[lev_name]})
+    walker = u_mean_star * deltap.interp(**{lev_name: u_mean_star[lev_name]})
+    walker = reverse_along_dim(walker, lev_name)
     walker = meridional_mean(walker.cumsum(dim=lev_name), lat_name=lat_name)
-    return walker
+    return const * reverse_along_dim(walker, lev_name)
