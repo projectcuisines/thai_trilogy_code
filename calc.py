@@ -5,7 +5,7 @@ import numpy as np
 
 import xarray as xr
 
-from grid import EARTH_RADIUS, meridional_mean, spatial_mean
+from grid import EARTH_RADIUS, meridional_mean, spatial_mean, zonal_mean
 
 
 __all__ = (
@@ -689,3 +689,66 @@ def scale_height(
         Atmospheric scale height [m] of the same shape as `temp`.
     """
     return temp * mgas_constant / (mw_dryair * gravity)
+
+
+def zonal_mass_streamfunction(
+    u,
+    press,
+    time_name="time",
+    lev_name="level_height",
+    lat_name="latitude",
+    lon_name="longitude",
+    g_planet=9.12,
+    r_planet=5988740.0,
+):
+    r"""
+    Calculate mean zonal mass streamfunction.
+
+    .. math::
+        \Psi_Z = \frac{2\pi a}{g} \int_{p_{sfc}}^{p_{top}} \overline{u}^* dp
+
+    Parameters
+    ----------
+    u: xarray.DataArray
+        Zonal wind [m s-1].
+    press : xarray.DataArray
+        Atmospheric pressure [Pa].
+    lon_name: str, optional
+        Name of x-coordinate.
+    lat_name: str, optional
+        Name of y-coordinate.
+    lev_name: str, optional
+        Name of z-coordinate.
+    time_name: str, optional
+        Name of t-coordinate.
+    g_planet: float, optional
+        Gravity constant [m s-2].
+    r_planet: float, optional
+        Radius of the planet [m].
+
+    References
+    ----------
+    * Haqq-Misra & Kopparapu (2015), eq. 5;
+    * Hartmann (1994), Global Physical Climatology, eq. 6.21
+
+    Examples
+    --------
+    >>> mzsf = zonal_mass_streamfunction(
+        u_lmdg,
+        press_lmdg,
+        time_name="time",
+        lev_name="lev",
+        lat_name="lat",
+        lon_name="lon",
+    )
+    """
+    const = 2 * np.pi * r_planet / g_planet
+    # calulate the zonal average value minus the time-average component of zonal wind
+    u_tmean = u.mean(dim=time_name)
+    u_lattmean = zonal_mean(u_tmean, lon_name=lon_name)
+    u_mean_star = u_lattmean - u_tmean
+
+    deltap = press.mean(dim=time_name).diff(dim=lev_name)
+    walker = const * u_mean_star * deltap.interp(**{lev_name: u_mean_star[lev_name]})
+    walker = meridional_mean(walker.cumsum(dim=lev_name), lat_name=lat_name)
+    return walker
