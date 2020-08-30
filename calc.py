@@ -111,8 +111,9 @@ def brunt_vaisala_frequency(
     )
 
     bv_freq = ((gravity / theta) * theta.differentiate(lev_name)) ** 0.5
-    bv_freq = bv_freq.rename("air_potential_temperature")
-    bv_freq.attrs.update({"units": "K"})
+    bv_freq =  bv_freq.rename("brunt_vaisala_frequency")
+    bv_freq.attrs.update({"units": "s-1"})
+    
     return bv_freq
 
 
@@ -545,8 +546,8 @@ def potential_temperature(
         Atmospheric potential temperature [K]
     """
     theta = temp * (p_ref / press) ** (gas_constant / c_p)
-    theta = theta.rename("brunt_vaisala_frequency")
-    theta.attrs.update({"units": "s-1"})
+    theta = theta.rename("air_potential_temperature")
+    theta.attrs.update({"units": "K"})
     return theta
 
 
