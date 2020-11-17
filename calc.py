@@ -26,7 +26,7 @@ __all__ = (
     "rossby_deformation_radius_stratified",
     "scale_height",
     "vert_mer_mean_of_mse_flux",
-    "zonal_mass_streamfunction"
+    "zonal_mass_streamfunction",
 )
 
 
@@ -107,13 +107,17 @@ def brunt_vaisala_frequency(
     """
     # Compute potential temperature from real temperature and pressure
     theta = potential_temperature(
-        temp, press, gas_constant=gas_constant, c_p=c_p, p_ref=p_ref,
+        temp,
+        press,
+        gas_constant=gas_constant,
+        c_p=c_p,
+        p_ref=p_ref,
     )
 
     bv_freq = ((gravity / theta) * theta.differentiate(lev_name)) ** 0.5
-    bv_freq =  bv_freq.rename("brunt_vaisala_frequency")
+    bv_freq = bv_freq.rename("brunt_vaisala_frequency")
     bv_freq.attrs.update({"units": "s-1"})
-    
+
     return bv_freq
 
 
@@ -524,7 +528,11 @@ def nondim_rossby_deformation_radius(
 
 
 def potential_temperature(
-    temp, press, gas_constant=287.058, c_p=1039, p_ref=100_000,
+    temp,
+    press,
+    gas_constant=287.058,
+    c_p=1039,
+    p_ref=100_000,
 ):
     """
     Calculate potential temperature
