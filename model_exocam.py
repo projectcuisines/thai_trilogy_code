@@ -109,6 +109,7 @@ def calc_virtual_temp_exocam(ds, mw_ratio=1.55423618, epsilon=287.058 / 461.52):
 
 def calc_alt_exocam(
     ds,
+    case="Ben1",
     mw_ratio=1.55423618,
     dry_air_gas_constant=287.058,
     condens_gas_constant=461.52,
@@ -139,9 +140,13 @@ def calc_alt_exocam(
     darr: xarray.DataArray
         Array of altitude level [m].
     """
+    if case in ["Ben1", "Ben2"]:
+        # Use real temperature
+        temp_v = ds.T
+    else:
     # Calculate virtual temperature
-    temp_v = calc_virtual_temp_exocam(
-        ds, mw_ratio=mw_ratio, epsilon=dry_air_gas_constant / condens_gas_constant
+    	temp_v = calc_virtual_temp_exocam(
+        	ds, mw_ratio=mw_ratio, epsilon=dry_air_gas_constant / condens_gas_constant
     )
     # Calculate pressure at mid-level points
     pres_m = calc_pres_exocam(ds, pos="mid")
@@ -169,3 +174,4 @@ def calc_alt_exocam(
     lev_alt.rename("altitude")
     lev_alt.attrs = {"units": "m", "long_name": "altitude_at_mid_points"}
     return lev_alt
+
