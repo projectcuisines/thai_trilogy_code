@@ -20,7 +20,7 @@ mgas_constant = 8.31446261815324  # molecular gas constant [J kg-1 mol-1]
 
 # PLANETS PROPERTIES
 planet_dfactor = 0.920  # TRAPPIST-1e diameter [Earth diameter unit]
-planet_gfactor = 0.817  # TRAPPIST-1e gravity [Earth diameter unit]
+planet_gfactor = 0.930  # TRAPPIST-1e gravity [Earth diameter unit]
 
 earth_d = 6371 * 2  # Earth diameter [km]
 earth_g = 9.81  # Earth gravity [m s-2]
