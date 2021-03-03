@@ -17,7 +17,6 @@ dependencies:
 - loguru
 - matplotlib>=3.0
 - metpy
-- mo_pack
 - netCDF4
 - numpy
 - pandas
