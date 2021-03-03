@@ -1,33 +1,32 @@
 name: thai
 channels:
 - conda-forge
-- dennissergeev/label/nightly
 dependencies:
-- aeolus
-- cartopy
+- aeolus>=0.4.8
+- black
+- cartopy>=0.18
 - dask
+- fastprogress
 - flake8
 - h5netcdf
 - h5py
 - ipykernel
 - ipywidgets
-- iris>=2.3
+- iris>=3.0
+- latlon23
+- loguru
 - matplotlib>=3.0
 - metpy
 - mo_pack
-- moviepy
 - netCDF4
 - numpy
 - pandas
-- python>=3.8
+- python>=3.9
 - pip
 - pytest
 - python-stratify
 - scipy
 - tqdm
-- xarray
+- xarray>=0.17
 - pip:
-  - fastprogress
   - imageio_ffmpeg
-  - latlon23
-  - loguru

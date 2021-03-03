@@ -149,7 +149,7 @@ def integral(xr_da, dim, coord=None, datetime_unit=None):
     xarray.DataArray.integrate: xarray function used when `coord` is None
     """
     if coord is None:
-        return xr_da.integrate(dim=dim, datetime_unit=datetime_unit)
+        return xr_da.integrate(coord=dim, datetime_unit=datetime_unit)
     else:
         name = xr_da.name
         coord_name = coord.name
