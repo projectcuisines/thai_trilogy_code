@@ -6,7 +6,8 @@ from pathlib import Path
 topdir = Path(__file__).absolute().parent.parent
 
 # Modelling results
-datadir = topdir / "data"
+# datadir = topdir / "data"
+datadir = Path("/media") / Path.home().parts[-1] / "Elements" / "exoplanets" / "thai" / "data"
 
 # Plotting output
 plotdir = topdir / "plots"
