@@ -7,6 +7,7 @@ import numpy as np
 import xarray as xr
 
 from grid import reverse_along_dim, roll_da_to_pm180
+from names import um
 
 
 __all__ = (
@@ -42,18 +43,18 @@ def adjust_um_grid(darr):
 
 def calc_um_ocean_frac(um_ds, t_freeze=271.35):
     """Calculate the open ocean fraction from the UM dataset."""
-    t_sfc = um_ds["STASH_m01s00i024"]  # Surface temperature
-    ocean_frac = da.exp(-(t_freeze - t_sfc) / 2)
+    ocean_frac = da.exp(-(t_freeze - um_ds[um.t_sfc]) / 2)
     ocean_frac = ocean_frac.where(ocean_frac < 1, 1)
     return ocean_frac
 
 
 def calc_um_rei(um_ds, t_thresh=193.15):
     """Calculate REI from the UM dataset using A. Baran's fit extended to low temperatures."""
+    # Select where is any cloud ice
     is_cld_ice = xr.where(
-        um_ds.STASH_m01s00i012 > 0, 1, 0
-    )  # select where is any cloud ice
-    air_temp = um_ds.STASH_m01s16i004
+        um_ds[um.cld_ice_mf] > 0, 1, 0
+    )
+    air_temp = um_ds[um.temp]
     # Cap temperature by t_thresh
     air_temp = xr.where(air_temp > t_thresh, air_temp, t_thresh)
     # Calculate the R_eff
@@ -61,35 +62,44 @@ def calc_um_rei(um_ds, t_thresh=193.15):
     # Convert to microns
     rei *= 1e-6
     rei.rename("ice_cloud_condensate_effective_radius")
-    rei.attrs = {"long_name": "ice_cloud_condensate_effective_radius", "units": "micron"}
+    rei.attrs = {
+        "long_name": "ice_cloud_condensate_effective_radius",
+        "units": "micron",
+    }
     return rei
 
-def calc_um_rel(um_ds,rho = 1.225):   
-	"""     Calculation of the effective radius of liquid water
-	following: 
-	r_eff = ( 3 * rho_air * qcl / ( 4 * pi * rho_water * 0.8 * 1e8 ))**(1./3.)
-	corresponding to Eq 14 
-	in https://journals.ametsoc.org/jas/article/51/13/1823/23387/The-Measurement-and-Parameterization-of-Effective
-	Parameters
-	----------
-	liq: xarray.DataArray
-		mass mixing ratio of liquid [kg/kg].
-	mw_dryair : float, optional
-	    Mean molecular weight of dry air [kg mol-1].
-	
-	 Returns
-	-------
-	rei: xarray.DataArray
-	    Ice effective radius [um], dimension (time,lev,lat,lon).
-	"""  
-	liq = um_ds.STASH_m01s00i012
-	
-	rel = (3 * rho * liq / (4*np.pi*1000*0.8*1e8))**(1/3)
 
-	rel.rename("liquid_cloud_condensate_effective_radius")
-	rel.attrs = {"long_name": "liquid_cloud_condensate_effective_radius", "units": "micron"}
-	
-	return rel
+def calc_um_rel(um_ds, rho=1.225):
+    """
+    Calculate the effective radius of liquid water.
+
+    Uses Eq. 15 in https://doi.org/10.1175/1520-0469(1994)051<1823:TMAPOE>2.0.CO;2
+    .. math::
+        r_eff = ( 3 * rho_air * qcl / ( 4 * pi * rho_water * 0.8 * 1e8 ))**(1./3.)
+
+    Parameters
+    ----------
+    liq: xarray.DataArray
+        Mass mixing ratio of liquid [kg/kg].
+    mw_dryair : float, optional
+        Mean molecular weight of dry air [kg mol-1].
+
+    Returns
+    -------
+    rei: xarray.DataArray
+        Ice effective radius [um], dimension (time,lev,lat,lon).
+    """
+    liq = um_ds[um.cld_liq_mf]
+
+    rel = (3 * rho * liq / (4 * np.pi * 1000 * 0.8 * 1e8)) ** (1 / 3)
+
+    rel.rename("liquid_cloud_condensate_effective_radius")
+    rel.attrs = {
+        "long_name": "liquid_cloud_condensate_effective_radius",
+        "units": "micron",
+    }
+
+    return rel
 
 
 def open_mf_um(files, main_time, rad_time, **kw_open):
@@ -120,7 +130,10 @@ def open_mf_um(files, main_time, rad_time, **kw_open):
     """
     dsets = []
     for fname in files:
-        ds = xr.open_dataset(fname, **kw_open,)
+        ds = xr.open_dataset(
+            fname,
+            **kw_open,
+        )
         proc_ds = {}
         target_time = ds[main_time]
         for d in ds.data_vars:
@@ -163,7 +176,7 @@ def prep_um_ds(raw_ds, vert_lev_miss_val="drop"):
         if d == "STASH_m01s00i407":
             # Skip pressure on rho levels
             continue
-        if d == "STASH_m01s00i002":
+        if d == um.u:
             var = raw_ds[d].interp(
                 latitude_cu=raw_ds[lat],
                 longitude_cu=raw_ds[lon],
@@ -175,7 +188,7 @@ def prep_um_ds(raw_ds, vert_lev_miss_val="drop"):
                     var = var.drop_vars(coord)
                 except ValueError:
                     pass
-        elif d == "STASH_m01s00i003":
+        elif d == um.v:
             var = raw_ds[d].interp(
                 latitude_cv=raw_ds[lat],
                 longitude_cv=raw_ds[lon],
@@ -195,7 +208,7 @@ def prep_um_ds(raw_ds, vert_lev_miss_val="drop"):
     new_ds = {}
     if vert_lev_miss_val == "extrapolate":
         for d in ds.data_vars:
-            if d in ["STASH_m01s16i004", "STASH_m01s30i113"]:
+            if d in [um.temp, um.rh]:
                 # if alt in ds[d].dims:
                 new_ds[d] = ds[d].interpolate_na(
                     dim=alt, method="slinear", fill_value="extrapolate"
@@ -209,4 +222,8 @@ def prep_um_ds(raw_ds, vert_lev_miss_val="drop"):
                 new_ds[d] = ds[d].isel(**{alt: slice(None, -1)})
             else:
                 new_ds[d] = ds[d]
-    return xr.Dataset(new_ds)
+    ds = xr.Dataset(new_ds)
+    ds = ds.rename(
+        {"hourly": um.t, "latitude_t": um.y, "longitude_t": um.x}
+    )
+    return ds
