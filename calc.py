@@ -26,6 +26,7 @@ __all__ = (
     "rossby_deformation_radius_stratified",
     "scale_height",
     "vert_mer_mean_of_mse_flux",
+    "wind_rot_div",
     "zonal_mass_streamfunction",
 )
 
@@ -769,3 +770,34 @@ def zonal_mass_streamfunction(
     walker = reverse_along_dim(walker, lev_name)
     walker = meridional_mean(walker.cumsum(dim=lev_name), lat_name=lat_name)
     return const * reverse_along_dim(walker, lev_name)
+
+
+def wind_rot_div(u, v, truncation=None, const=None):
+    """Split the wind field into divergent and zonal mean and eddy rotational components."""
+    from windspharm.xarray import VectorWind
+
+    vec = VectorWind(u, v, rsphere=const.rplanet)
+    div_cmpnt_u, div_cmpnt_v, rot_cmpnt_u, rot_cmpnt_v = vec.helmholtz(
+        truncation=truncation
+    )
+    out = {}
+    out["u_total"] = u
+    out["v_total"] = v
+    out["u_div"] = div_cmpnt_u.rename("irrotational_eastward_wind")
+    out["v_div"] = div_cmpnt_v.rename("irrotational_northward_wind")
+    out["u_rot"] = rot_cmpnt_u.rename("non_divergent_eastward_wind")
+    out["v_rot"] = rot_cmpnt_v.rename("non_divergent_northward_wind")
+
+    out["u_rot_zm"] = xr.broadcast(zonal_mean(rot_cmpnt_u), u)[0].rename(
+        "zonal_mean_of_non_divergent_eastward_wind"
+    )
+    out["v_rot_zm"] = xr.broadcast(zonal_mean(rot_cmpnt_v), v)[0].rename(
+        "zonal_mean_of_non_divergent_northward_wind"
+    )
+    out["u_rot_eddy"] = (rot_cmpnt_u - out["u_rot_zm"]).rename(
+        "zonal_deviation_of_non_divergent_eastward_wind"
+    )
+    out["v_rot_eddy"] = (rot_cmpnt_v - out["v_rot_zm"]).rename(
+        "zonal_deviation_of_non_divergent_northward_wind"
+    )
+    return xr.Dataset(out)

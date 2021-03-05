@@ -14,8 +14,8 @@ rocke3d = Model(
     x="longitude",
     # lw_band="lw_bband_lev_pseudo",
     # Variables
-    # u="STASH_m01s00i002",
-    # v="STASH_m01s00i003",
+    u="u",
+    v="v",
     # w="STASH_m01s00i150",
     # pres="STASH_m01s00i408",
     # sh="STASH_m01s00i010",

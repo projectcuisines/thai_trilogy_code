@@ -27,5 +27,6 @@ dependencies:
 - scipy
 - tqdm
 - xarray>=0.17
+- windspharm
 - pip:
   - imageio_ffmpeg
