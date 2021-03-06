@@ -16,7 +16,7 @@ lmdg = Model(
     # Variables
     u="u",
     v="v",
-    # w="STASH_m01s00i150",
+    w="w",
     # pres="STASH_m01s00i408",
     # sh="STASH_m01s00i010",
     # t_sfc="STASH_m01s00i024",

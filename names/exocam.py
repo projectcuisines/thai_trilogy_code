@@ -16,7 +16,7 @@ exocam = Model(
     # Variables
     u="U",
     v="V",
-    # w="STASH_m01s00i150",
+    w="OMEGA",
     # pres="STASH_m01s00i408",
     # sh="STASH_m01s00i010",
     # t_sfc="STASH_m01s00i024",
