@@ -1,0 +1,31 @@
+# My custom matplotlib style sheet
+
+mathtext.default : regular # The default font to use for math.
+                       # Can be any of the LaTeX font names, including
+                       # the special name "regular" for the same font
+                       # used in regular text.
+                       
+font.size           : 12.0
+legend.fontsize : 16
+axes.labelsize : 14
+axes.titlesize : 18
+xtick.labelsize : 12
+ytick.labelsize : 12
+
+figure.figsize   : 12, 6.75   # figure size in inches
+figure.dpi       : 150      # figure dots per inch
+figure.facecolor : (1, 1, 1, 1)
+# the default savefig params can be different from the display params
+# e.g., you may want a higher resolution, or to make the figure
+# background white
+#savefig.dpi         : figure   # figure dots per inch or 'figure'
+#savefig.facecolor   : white    # figure facecolor when saving
+#savefig.edgecolor   : white    # figure edgecolor when saving
+savefig.format      : png      # png, ps, pdf, svg
+savefig.bbox        : tight    # 'tight' or 'standard'.
+                                # 'tight' is incompatible with pipe-based animation
+                                # backends but will workd with temporary file based ones:
+                                # e.g. setting animation.writer to ffmpeg will not work,
+                                # use ffmpeg_file instead
+# axes.spines.top : False
+# axes.spines.right : False
