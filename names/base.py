@@ -33,6 +33,9 @@ class Model:
     t_sfc: str = None
     p_sfc: str = None
     # Radiation
+    toa_crf_lw: str = None
+    toa_net_lw: str = None
+    toa_net_sw: str = None
     toa_isr: str = None
     toa_olr: str = None
     toa_olr_cs: str = None
