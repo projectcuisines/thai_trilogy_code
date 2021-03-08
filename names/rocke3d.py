@@ -7,7 +7,7 @@ __all__ = ("rocke3d", )
 rocke3d = Model(
     # Coordinates
     t="time",
-    # z="thlev_zsea_theta",
+    z="z",
     lev="level",
     # s="thlev_C_theta",
     y="latitude",
@@ -18,6 +18,7 @@ rocke3d = Model(
     v="v",
     w="w",
     pres="p_3d",
+    temp_v="virtual_temperature",
     sh="q",
     # t_sfc="STASH_m01s00i024",
     toa_net_sw="srnf_toa",

@@ -28,6 +28,7 @@ class Model:
     w: str = None
     pres: str = None
     thta: str = None
+    temp_v: str = None
     exner: str = None
     sh: str = None
     t_sfc: str = None

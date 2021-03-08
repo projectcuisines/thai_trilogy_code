@@ -8,7 +8,7 @@ lmdg = Model(
     # Coordinates
     t="Time",
     z="altitude",
-    # lev="level",
+    lev="level_height",
     # s="thlev_C_theta",
     y="latitude",
     x="longitude",
@@ -18,6 +18,7 @@ lmdg = Model(
     v="v",
     w="w",
     pres="p",
+    temp_v="virtual_temperature",
     sh="h2o_vap",
     # t_sfc="STASH_m01s00i024",
     toa_isr="ISR",
