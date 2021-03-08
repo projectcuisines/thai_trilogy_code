@@ -19,6 +19,7 @@ __all__ = (
     "roll_da_to_pm180",
     "spatial_integral",
     "spatial_mean",
+    "time_mean",
     "wrap_lons",
     "zonal_mean",
 )
@@ -268,6 +269,27 @@ def spatial_mean(xr_da, lon_name="longitude", lat_name="latitude"):
     weights = da.cos(da.deg2rad(xr_da[lat_name]))
     res = xr_da.weighted(weights).mean(dim=[lon_name, lat_name])
     return res
+
+
+def time_mean(xr_da, time_name="time"):
+    """
+    Calculate a time average of an `xarray.DataArray`.
+
+    Parameters
+    ----------
+    xr_da: xarray.DataArray
+        Data array with a time coordinate.
+    time_name: str, optional
+        Name of t-coordinate
+
+    Returns
+    -------
+    xarray.DataArray
+        Array averaged over the time dimension.
+    """
+    xr_da_mean = xr_da.mean(dim=time_name)
+    xr_da_mean.attrs.update(xr_da.attrs)
+    return xr_da_mean
 
 
 def wrap_lons(lons, base, period):
