@@ -27,6 +27,7 @@ earth_g = 9.81  # Earth gravity [m s-2]
 gplanet = planet_gfactor * earth_g  # TRAPPIST-1e gravity [m s-2]
 dplanet = planet_dfactor * earth_d  # TRAPPIST-1e diameter [km]
 rplanet = dplanet / 2  # TRAPPIST-1e radius [km] (km needed for PSG)
+rplanet_m = rplanet * 1e3
 
 # ORBITAL INPUTS
 semiaxis = 28.17e-3  # TRAPPIST-1e semi major axis [AU]

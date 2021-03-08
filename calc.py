@@ -314,8 +314,8 @@ def moist_static_energy(
 
     Returns
     -------
-    list
-        List of data arrays of moist static energy or its components.
+    xarray.Dataset
+        Data arrays of moist static energy or its components.
     """
     if cmpnt in ["dry", "moist", "all"]:
         # Geopotential height
@@ -323,19 +323,19 @@ def moist_static_energy(
         # Dry component: c_p T + g z
         dse = c_p * temp + ghgt
         if cmpnt == "dry":
-            return [dse]
+            return xr.Dataset({"dry": dse})
     if cmpnt in ["latent", "moist", "all"]:
         # latent component :
         lse = latent_heat * spec_hum
         if cmpnt == "latent":
-            return [lse]
+            return xr.Dataset({"latent": lse})
     if cmpnt in ["moist", "all"]:
         # dry and latent components
         mse = dse + lse
         if cmpnt == "moist":
-            return [mse]
+            return xr.Dataset({"moist": mse})
         elif cmpnt == "all":
-            return dse, lse, mse
+            return xr.Dataset({"dry": dse, "latent": lse, "moist": mse})
 
 
 def vert_mer_mean_of_mse_flux(
@@ -401,8 +401,8 @@ def vert_mer_mean_of_mse_flux(
 
     Returns
     -------
-    list
-        List of data arrays of the flux divergence of moist static energy or its components.
+    xarray.Dataset
+        Data arrays of the flux divergence of moist static energy or its components.
 
     See also
     --------
@@ -418,8 +418,8 @@ def vert_mer_mean_of_mse_flux(
         gravity=gravity,
         latent_heat=latent_heat,
     )
-    results = []
-    for mse_cmpnt in mse_cmpnts:
+    results = {}
+    for key, mse_cmpnt in mse_cmpnts.items():
         # Calculate horizontal fluxes (zonal and meridional components)
         # and their horizontal divergence in spherical coordinates
         result = hdiv(
@@ -440,8 +440,8 @@ def vert_mer_mean_of_mse_flux(
         )
         # Do the meridional averaging
         result = meridional_mean(result, lat_name=lat_name)
-        results.append(result)
-    return results
+        results[key] = result
+    return xr.Dataset(results)
 
 
 def nondim_rossby_deformation_radius(
@@ -776,7 +776,7 @@ def wind_rot_div(u, v, truncation=None, const=None):
     """Split the wind field into divergent and zonal mean and eddy rotational components."""
     from windspharm.xarray import VectorWind
 
-    vec = VectorWind(u, v, rsphere=const.rplanet)
+    vec = VectorWind(u, v, rsphere=const.rplanet_m)
     div_cmpnt_u, div_cmpnt_v, rot_cmpnt_u, rot_cmpnt_v = vec.helmholtz(
         truncation=truncation
     )
