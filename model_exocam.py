@@ -3,6 +3,7 @@
 import dask.array as da
 
 from grid import add_cyclic_point_to_da, reverse_along_dim
+from names import exocam
 
 
 __all__ = ("adjust_exocam_grid", "calc_pres_exocam", "calc_virtual_temp_exocam")
@@ -97,7 +98,7 @@ def calc_virtual_temp_exocam(ds, mw_ratio=1.55423618, epsilon=287.058 / 461.52):
     """
     # TODO: make this abstract or switch to MetPy
     # Convert specific humidity to mass mixing ratio
-    mmr_dry = ds.Q / (1.0 - ds.Q)
+    mmr_dry = ds[exocam.sh] / (1.0 - ds[exocam.sh])
     # Convert to volume mixing ratio
     vmr_dry = mmr_dry * mw_ratio
     # Calculate volume mixing ratio of water relative to all species
@@ -142,12 +143,12 @@ def calc_alt_exocam(
     """
     if case in ["Ben1", "Ben2"]:
         # Use real temperature
-        temp_v = ds.T
+        temp_v = ds[exocam.temp]
     else:
-    # Calculate virtual temperature
-    	temp_v = calc_virtual_temp_exocam(
-        	ds, mw_ratio=mw_ratio, epsilon=dry_air_gas_constant / condens_gas_constant
-    )
+        # Calculate virtual temperature
+        temp_v = calc_virtual_temp_exocam(
+            ds, mw_ratio=mw_ratio, epsilon=dry_air_gas_constant / condens_gas_constant
+        )
     # Calculate pressure at mid-level points
     pres_m = calc_pres_exocam(ds, pos="mid")
     # Calculate pressure and interface points
@@ -156,12 +157,12 @@ def calc_alt_exocam(
     p2 = pres_i[dict(ilev=slice(1, None))]  # upper interface (lower pressure)
     # Reassign the coordinate to mid-level points to be compatible
     # with the vertical coordinate of`temp_v`
-    p1 = p1.rename(ilev="lev").assign_coords(lev=temp_v.lev)
-    p2 = p2.rename(ilev="lev").assign_coords(lev=temp_v.lev)
+    p1 = p1.rename(ilev=exocam.lev).assign_coords(lev=temp_v.lev)
+    p2 = p2.rename(ilev=exocam.lev).assign_coords(lev=temp_v.lev)
     # Calculate the geopotential height thickness of each layer
     dz_int = (dry_air_gas_constant * temp_v / gravity) * da.log(p1 / p2)
     # Stack up layer thicknesses to get total height of lower interface layers
-    ilev_alt = dz_int.cumsum(dim="lev")
+    ilev_alt = dz_int.cumsum(dim=exocam.lev)
     # Discard the last level height and insert zeros in the first level
     ilev_alt = ilev_alt.shift(lev=1).fillna(0.0)
     # Calculate geopotential height thickness between midpoints and interfaces
@@ -171,7 +172,6 @@ def calc_alt_exocam(
     # Reverse level heights back to the original ordering
     lev_alt = lev_alt
     # Update metadata
-    lev_alt.rename("altitude")
-    lev_alt.attrs = {"units": "m", "long_name": "altitude_at_mid_points"}
+    lev_alt = lev_alt.rename("altitude")
+    lev_alt.attrs.update({"units": "m", "long_name": "altitude_at_mid_points"})
     return lev_alt
-

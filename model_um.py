@@ -48,57 +48,59 @@ def calc_um_ocean_frac(um_ds, t_freeze=271.35):
     return ocean_frac
 
 
-def calc_um_rei(um_ds, t_thresh=193.15):
+def calc_um_rei(ds, t_thresh=193.15):
     """Calculate REI from the UM dataset using A. Baran's fit extended to low temperatures."""
     # Select where is any cloud ice
-    is_cld_ice = xr.where(
-        um_ds[um.cld_ice_mf] > 0, 1, 0
-    )
-    air_temp = um_ds[um.temp]
+    is_cld_ice = xr.where(ds[um.cld_ice_mf] > 0, 1, 0)
+    air_temp = ds[um.temp]
     # Cap temperature by t_thresh
     air_temp = xr.where(air_temp > t_thresh, air_temp, t_thresh)
     # Calculate the R_eff
     rei = is_cld_ice * (-353.613 + 1.868 * air_temp) / 2
     # Convert to microns
     rei *= 1e-6
-    rei.rename("ice_cloud_condensate_effective_radius")
-    rei.attrs = {
-        "long_name": "ice_cloud_condensate_effective_radius",
-        "units": "micron",
-    }
+    rei = rei.rename("ice_cloud_condensate_effective_radius")
+    rei.attrs.update(
+        {
+            "long_name": "ice_cloud_condensate_effective_radius",
+            "units": "micron",
+        }
+    )
     return rei
 
 
-def calc_um_rel(um_ds, rho=1.225):
-    """
+def calc_um_rel(ds, rho=1.225):
+    r"""
     Calculate the effective radius of liquid water.
 
     Uses Eq. 15 in https://doi.org/10.1175/1520-0469(1994)051<1823:TMAPOE>2.0.CO;2
     .. math::
-        r_eff = ( 3 * rho_air * qcl / ( 4 * pi * rho_water * 0.8 * 1e8 ))**(1./3.)
+        r_{eff} = ( 3 * rho_{air} * q_{cl} / ( 4 * \pi * rho_{water} * 0.8 * 1e8 ))**(1./3.)
 
     Parameters
     ----------
-    liq: xarray.DataArray
-        Mass mixing ratio of liquid [kg/kg].
-    mw_dryair : float, optional
-        Mean molecular weight of dry air [kg mol-1].
+    ds: xarray.Dataset
+        Dataset with cloud liquid water MMR.
+    rho: xarray.DataArray or float, optional
+        Dry air density [kg m-3].
 
     Returns
     -------
     rei: xarray.DataArray
-        Ice effective radius [um], dimension (time,lev,lat,lon).
+        Ice effective radius [um].
     """
-    liq = um_ds[um.cld_liq_mf]
+    liq = ds[um.cld_liq_mf]  # Mass mixing ratio of liquid [kg/kg].
+    rho_water = 1000.0
 
-    rel = (3 * rho * liq / (4 * np.pi * 1000 * 0.8 * 1e8)) ** (1 / 3)
+    rel = (3 * rho * liq / (4 * np.pi * rho_water * 0.8 * 1e8)) ** (1 / 3)
 
-    rel.rename("liquid_cloud_condensate_effective_radius")
-    rel.attrs = {
-        "long_name": "liquid_cloud_condensate_effective_radius",
-        "units": "micron",
-    }
-
+    rel = rel.rename("liquid_cloud_condensate_effective_radius")
+    rel.attrs.update(
+        {
+            "long_name": "liquid_cloud_condensate_effective_radius",
+            "units": "micron",
+        }
+    )
     return rel
 
 
@@ -223,7 +225,5 @@ def prep_um_ds(raw_ds, vert_lev_miss_val="drop"):
             else:
                 new_ds[d] = ds[d]
     ds = xr.Dataset(new_ds)
-    ds = ds.rename(
-        {"hourly": um.t, "latitude_t": um.y, "longitude_t": um.x}
-    )
+    ds = ds.rename({"hourly": um.t, "latitude_t": um.y, "longitude_t": um.x})
     return ds

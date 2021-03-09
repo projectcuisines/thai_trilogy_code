@@ -1,7 +1,7 @@
 """Model-specific dictionaries of variable names and coordinates."""
 from .base import Model
 
-__all__ = ("rocke3d", )
+__all__ = ("rocke3d",)
 
 
 rocke3d = Model(
@@ -35,8 +35,8 @@ rocke3d = Model(
     # ocean_frac="STASH_m01s03i395",
     temp="t",
     # rh="STASH_m01s30i113",
-    # cld_ice_mf="STASH_m01s00i012",
-    # cld_liq_mf="STASH_m01s00i254",
+    cld_ice_mf="icmmr",
+    cld_liq_mf="wcmmr",
     # cld_ice_v="STASH_m01s00i268",
     # cld_liq_v="STASH_m01s00i267",
     # cld_v="STASH_m01s00i266",

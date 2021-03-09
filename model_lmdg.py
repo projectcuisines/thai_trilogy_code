@@ -2,6 +2,8 @@
 """Utilities for the ExoCAM output."""
 import dask.array as da
 
+from names import lmdg
+
 
 __all__ = ("calc_alt_lmdg", "calc_virtual_temp_lmdg")
 
@@ -31,13 +33,13 @@ def calc_virtual_temp_lmdg(ds, mw_ratio=1.55423618, epsilon=287.058 / 461.52):
     """
     # TODO: make this abstract or switch to MetPy
     # Convert specific humidity to mass mixing ratio
-    mmr_dry = ds.h2o_vap / (1.0 - ds.h2o_vap)
+    mmr_dry = ds[lmdg.sh] / (1.0 - ds[lmdg.sh])
     # Convert to volume mixing ratio
     vmr_dry = mmr_dry * mw_ratio
     # Calculate volume mixing ratio of water relative to all species
     rv = vmr_dry / (1.0 + vmr_dry)
     # Calculate virtual temperature
-    temp_v = ds.temp * (1 + rv / epsilon) / (1 + rv)
+    temp_v = ds[lmdg.temp] * (1 + rv / epsilon) / (1 + rv)
     return temp_v
 
 
@@ -76,7 +78,7 @@ def calc_alt_lmdg(
     """
     if case in ["Ben1", "Ben2"]:
         # Use real temperature
-        temp_v = ds.temp
+        temp_v = ds[lmdg.temp]
     else:
         # Calculate virtual temperature
         temp_v = calc_virtual_temp_lmdg(
@@ -90,12 +92,12 @@ def calc_alt_lmdg(
     p2 = pres_i[dict(interlayer=slice(1, None))]  # upper interface (lower pressure)
     # Reassign the coordinate to midlayers to be compatible
     # with the vertical coordinate of`temp_v`
-    p1 = p1.rename(interlayer="altitude").assign_coords(altitude=temp_v.altitude)
-    p2 = p2.rename(interlayer="altitude").assign_coords(altitude=temp_v.altitude)
+    p1 = p1.rename(interlayer=lmdg.z).assign_coords(altitude=temp_v.altitude)
+    p2 = p2.rename(interlayer=lmdg.z).assign_coords(altitude=temp_v.altitude)
     # Calculate the geopotential height thickness of each layer
     dz_int = (dry_air_gas_constant * temp_v / gravity) * da.log(p1 / p2)
     # Stack up layer thicknesses to get total height of lower interface layers
-    ilev_alt = dz_int.cumsum(dim="altitude")
+    ilev_alt = dz_int.cumsum(dim=lmdg.z)
     # Discard the last level height and insert zeros in the first level
     ilev_alt = ilev_alt.shift(altitude=1).fillna(0.0)
     # Calculate geopotential height thickness between midpoints and interfaces
@@ -103,6 +105,6 @@ def calc_alt_lmdg(
     # Find midpoint height by adding half-layer thickness to the height of lower interface levels
     lev_alt = ilev_alt + dz_mid_int
     # Update metadata
-    lev_alt.rename("altitude")
-    lev_alt.attrs = {"units": "m", "long_name": "altitude_at_mid_points"}
+    lev_alt = lev_alt.rename(lmdg.lev)
+    lev_alt.attrs.update({"units": "m", "long_name": "altitude_at_mid_points"})
     return lev_alt

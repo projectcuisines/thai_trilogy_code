@@ -1,7 +1,7 @@
 """Model-specific dictionaries of variable names and coordinates."""
 from .base import Model
 
-__all__ = ("lmdg", )
+__all__ = ("lmdg",)
 
 
 lmdg = Model(

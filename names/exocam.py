@@ -1,7 +1,7 @@
 """Model-specific dictionaries of variable names and coordinates."""
 from .base import Model
 
-__all__ = ("exocam", )
+__all__ = ("exocam",)
 
 
 exocam = Model(

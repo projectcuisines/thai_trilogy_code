@@ -110,5 +110,7 @@ class Model:
 
     def __repr__(self):
         """Override the repr method of the dataclass."""
-        size = len([_ for _, v in self.__dataclass_fields__.items() if v.name is not None])
+        size = len(
+            [_ for _, v in self.__dataclass_fields__.items() if v.name is not None]
+        )
         return f"{self.__class__}({size} fields)"
