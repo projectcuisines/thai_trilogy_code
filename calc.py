@@ -351,6 +351,9 @@ def vert_mer_mean_of_mse_flux(
     lat_name="latitude",
     z_name="level_height",
     cmpnt="all",
+    opt="finite_diff",
+    truncation=None,
+    skiprows=None,
     c_p=1005,
     gravity=9.80665,
     latent_heat=2_501_000,
@@ -390,6 +393,14 @@ def vert_mer_mean_of_mse_flux(
     cmpnt: str, optional
         Component of MSE to output: "dry" | "latent" | "moist"
         By default, outputs all three of them: DSE, LSE, and their sum, MSE.
+    opt: str, optional
+        Choose how to calculate the horizontal divergence: "spectral" | "finite_diff"
+        spectral - use `windspharm` (with specified truncation)
+        finite_diff - use finite differences
+    truncation: int, optional
+        Spectral truncation parameter passed to `windspharm`.
+    skiprows: int, optional
+        Omit this number of latitude points close to each pole to avoid spurious values.
     c_p: float
         Dry air specific heat capacity [m2 s-2 K-1].
     gravity: float
@@ -422,23 +433,41 @@ def vert_mer_mean_of_mse_flux(
     for key, mse_cmpnt in mse_cmpnts.items():
         # Calculate horizontal fluxes (zonal and meridional components)
         # and their horizontal divergence in spherical coordinates
-        result = hdiv(
-            u * mse_cmpnt,
-            v * mse_cmpnt,
-            lon_name=lon_name,
-            lat_name=lat_name,
-            r_planet=r_planet,
-        )
+        if zcoord_type == "height":
+            flux_x = u * mse_cmpnt * rho
+            flux_y = v * mse_cmpnt * rho
+        elif zcoord_type == "pressure":
+            flux_x = u * mse_cmpnt
+            flux_y = v * mse_cmpnt
+        if opt == "finite_diff":
+            result = hdiv(
+                flux_x,
+                flux_y,
+                lon_name=lon_name,
+                lat_name=lat_name,
+                r_planet=r_planet,
+            )
+        elif opt == "spectral":
+            from windspharm.xarray import VectorWind  # noqa
+
+            vec = VectorWind(flux_x, flux_y, rsphere=r_planet)
+            result = vec.divergence(truncation=truncation)
         # Do the vertical integration
-        result = mass_weighted_vertical_integral(
-            result,
-            z_name,
-            coord=zcoord,
-            coord_type=zcoord_type,
-            rho=rho,
-            gravity=gravity,
-        )
+        # result = mass_weighted_vertical_integral(
+        #     result,
+        #     z_name,
+        #     coord=zcoord,
+        #     coord_type=zcoord_type,
+        #     rho=rho,  # XXX
+        #     gravity=gravity,
+        # )
+        if zcoord_type == "height":
+            result = integral(result, dim=z_name, coord=zcoord)
+        elif zcoord_type == "pressure":
+            result = -integral(result, dim=z_name, coord=zcoord) / gravity
         # Do the meridional averaging
+        if isinstance(skiprows, int):
+            result = result.isel(**{lat_name: slice(skiprows, -skiprows)})
         result = meridional_mean(result, lat_name=lat_name)
         results[key] = result
     return xr.Dataset(results)

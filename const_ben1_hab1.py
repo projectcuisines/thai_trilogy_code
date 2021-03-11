@@ -6,7 +6,7 @@ ptot = 1e5  # sufrace pressure [Pa]
 # Ben1 and Hab1/Hab1* specific constants
 co2 = 0.000400  # mixing ratio of CO2 [bar]
 n2 = 1 - co2  # mixing ratio of N2 [bar]
-c_p = 1039  # specific heat at constant volume [J K-1]
+c_p = 1039  # specific heat at constant pressure [J K-1]
 rcp = 0.297  # ratio molecular gas contant by specific gas constant
 rgas = 287.058  # specific gas constant [J kg-1 K]
 

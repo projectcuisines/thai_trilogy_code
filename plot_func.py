@@ -23,18 +23,18 @@ from grid import add_cyclic_point_to_da
 KW_CART = dict(transform=ccrs.PlateCarree())
 KW_SBPLT_LABEL = dict(fontsize="small", pad=5, loc="left")
 KW_MAIN_TTL = dict(fontsize="large", pad=5, loc="center")
-KW_AUX_TTL = dict(fontsize="small", pad=5, loc="right")
+KW_AUX_TTL = dict(fontsize="medium", pad=5, loc="right")
 KW_SYM0 = dict(norm=MidpointNormalize(midpoint=0.0), cmap="coolwarm")
 # Axes grid specs
 KW_AXGR = dict(
-    axes_pad=(0.7, 0.4),
+    axes_pad=(0.6, 0.5),
     cbar_location="right",
     cbar_mode="single",
-    cbar_pad=0.1,
+    cbar_pad=0.2,
     cbar_size="1.5%",
     label_mode="",
 )
-KW_CBAR_TTL = dict(fontsize="x-small", pad=5)
+KW_CBAR_TTL = dict(fontsize="small", pad=5)
 
 # Locations of grid lines on maps
 XLOCS = np.arange(-180, 181, 90)

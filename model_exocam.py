@@ -68,8 +68,8 @@ def calc_pres_exocam(ds, pos="mid"):
     else:
         raise ValueError(f"`pos` should be one of 'middle', 'inter'; {pos} given")
     pres3d = coef_a * ds.P0 + coef_b * ds.PS
-    pres3d.rename("air_pressure")
-    pres3d.attrs = {"units": ds.P0.units, "long_name": f"air_pressure_at_{pos}_points"}
+    pres3d = pres3d.rename("air_pressure")
+    pres3d.attrs.update({"units": ds.P0.units, "long_name": f"air_pressure_at_{pos}_points"})
     return pres3d
 
 
