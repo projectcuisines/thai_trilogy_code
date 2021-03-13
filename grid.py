@@ -13,15 +13,10 @@ EARTH_RADIUS = 6371000.0  # m
 __all__ = (
     "add_cyclic_point_to_da",
     "grid_cell_areas",
-    "meridional_mean",
     "reverse_along_dim",
     "roll_da_to_0360",
     "roll_da_to_pm180",
-    "spatial_integral",
-    "spatial_mean",
-    "time_mean",
     "wrap_lons",
-    "zonal_mean",
 )
 
 
@@ -172,28 +167,6 @@ def grid_cell_areas(lon1d, lat1d, r_planet=EARTH_RADIUS):
     return area
 
 
-def meridional_mean(xr_da, lat_name="latitude"):
-    """
-    Calculate a meridional average of an `xarray.DataArray`.
-
-    Parameters
-    ----------
-    xr_da: xarray.DataArray
-        Data array with a latitude coordinate.
-    lat_name: str, optional
-        Name of y-coordinate
-
-    Returns
-    -------
-    xarray.DataArray
-        Array averaged over the latitudes.
-    """
-    coslat = da.cos(da.deg2rad(xr_da[lat_name]))
-    xr_da_mean = xr_da.weighted(coslat).mean(dim=lat_name)
-    # xr_da_mean = (xr_da * coslat).sum(dim=lat_name) / (coslat.sum(lat_name))
-    return xr_da_mean
-
-
 def reverse_along_dim(xr_da, dim_name):
     """Reverse `xarray.DataArray` along one of its dimensions."""
     out = xr_da.reindex(**{dim_name: list(reversed(xr_da[dim_name]))})
@@ -218,102 +191,8 @@ def roll_da_to_pm180(xr_da, lon_name="longitude"):
     return out
 
 
-def spatial_integral(
-    xr_da, lon_name="longitude", lat_name="latitude", r_planet=EARTH_RADIUS
-):
-    """
-    Calculate spatial integral of xarray.DataArray with grid cell weighting.
-
-    Parameters
-    ----------
-    xr_da: xarray.DataArray
-        Data to average
-    lon_name: str, optional
-        Name of x-coordinate
-    lat_name: str, optional
-        Name of y-coordinate
-    r_planet: float
-        Radius of the planet [metres], currently assumed spherical (not important anyway)
-
-    Returns
-    -------
-    xarray.DataArray
-        Spatially averaged xarray.DataArray.
-    """
-    lon = xr_da[lon_name].values
-    lat = xr_da[lat_name].values
-
-    area_weights = grid_cell_areas(lon, lat, r_planet=r_planet)
-
-    return (xr_da * area_weights).sum(dim=[lon_name, lat_name])
-
-
-def spatial_mean(xr_da, lon_name="longitude", lat_name="latitude"):
-    """
-    Perform averaging on an `xarray.DataArray` with latitude weighting.
-
-    Parameters
-    ----------
-    xr_da: xarray.DataArray
-        Data to average
-    lon_name: str, optional
-        Name of x-coordinate
-    lat_name: str, optional
-        Name of y-coordinate
-
-    Returns
-    -------
-    xarray.DataArray
-        Spatially averaged xarray.DataArray.
-    """
-    weights = da.cos(da.deg2rad(xr_da[lat_name]))
-    res = xr_da.weighted(weights).mean(dim=[lon_name, lat_name])
-    return res
-
-
-def time_mean(xr_da, time_name="time"):
-    """
-    Calculate a time average of an `xarray.DataArray`.
-
-    Parameters
-    ----------
-    xr_da: xarray.DataArray
-        Data array with a time coordinate.
-    time_name: str, optional
-        Name of t-coordinate
-
-    Returns
-    -------
-    xarray.DataArray
-        Array averaged over the time dimension.
-    """
-    xr_da_mean = xr_da.mean(dim=time_name)
-    xr_da_mean.attrs.update(xr_da.attrs)
-    return xr_da_mean
-
-
 def wrap_lons(lons, base, period):
     """Wrap longitude values into the range between base and base+period."""
     # It is important to use 64bit floating precision
     lons = lons.astype(np.float64)
     return ((lons - base + period * 2) % period) + base
-
-
-def zonal_mean(xr_da, lon_name="longitude"):
-    """
-    Calculate a zonal average of an `xarray.DataArray`.
-
-    Parameters
-    ----------
-    xr_da: xarray.DataArray
-        Data array with a longitude coordinate.
-    lon_name: str, optional
-        Name of x-coordinate
-
-    Returns
-    -------
-    xarray.DataArray
-        Array averaged over the longitudes.
-    """
-    xr_da_mean = xr_da.mean(dim=lon_name)
-    return xr_da_mean

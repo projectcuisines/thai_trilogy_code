@@ -7,10 +7,8 @@ import xarray as xr
 
 from grid import (
     EARTH_RADIUS,
-    meridional_mean,
+    grid_cell_areas,
     reverse_along_dim,
-    spatial_mean,
-    zonal_mean,
 )
 
 
@@ -19,15 +17,20 @@ __all__ = (
     "integral",
     "hdiv",
     "mass_weighted_vertical_integral",
+    "meridional_mean",
     "moist_static_energy",
     "nondim_rossby_deformation_radius",
     "potential_temperature",
     "rossby_deformation_radius_isothermal",
     "rossby_deformation_radius_stratified",
     "scale_height",
+    "spatial_mean",
+    "spatial_sum",
+    "time_mean",
     "vert_mer_mean_of_mse_flux",
     "wind_rot_div",
     "zonal_mass_streamfunction",
+    "zonal_mean",
 )
 
 
@@ -277,6 +280,28 @@ def mass_weighted_vertical_integral(
             )
         integ = -integral(xr_da, dim=dim, coord=coord) / gravity
     return integ
+
+
+def meridional_mean(xr_da, lat_name="latitude"):
+    """
+    Calculate a meridional average of an `xarray.DataArray`.
+
+    Parameters
+    ----------
+    xr_da: xarray.DataArray
+        Data array with a latitude coordinate.
+    lat_name: str, optional
+        Name of y-coordinate
+
+    Returns
+    -------
+    xarray.DataArray
+        Array averaged over the latitudes.
+    """
+    coslat = da.cos(da.deg2rad(xr_da[lat_name]))
+    xr_da_mean = xr_da.weighted(coslat).mean(dim=lat_name)
+    # xr_da_mean = (xr_da * coslat).sum(dim=lat_name) / (coslat.sum(lat_name))
+    return xr_da_mean
 
 
 def moist_static_energy(
@@ -703,6 +728,29 @@ def rossby_deformation_radius_stratified(
     return radius
 
 
+def spatial_mean(xr_da, lon_name="longitude", lat_name="latitude"):
+    """
+    Perform averaging on an `xarray.DataArray` with latitude weighting.
+
+    Parameters
+    ----------
+    xr_da: xarray.DataArray
+        Data to average
+    lon_name: str, optional
+        Name of x-coordinate
+    lat_name: str, optional
+        Name of y-coordinate
+
+    Returns
+    -------
+    xarray.DataArray
+        Spatially averaged xarray.DataArray.
+    """
+    weights = da.cos(da.deg2rad(xr_da[lat_name]))
+    res = xr_da.weighted(weights).mean(dim=[lon_name, lat_name])
+    return res
+
+
 def scale_height(
     temp,
     r_planet=EARTH_RADIUS,
@@ -735,6 +783,88 @@ def scale_height(
         Atmospheric scale height [m] of the same shape as `temp`.
     """
     return temp * mgas_constant / (mw_dryair * gravity)
+
+
+def spatial_sum(
+    xr_da, lon_name="longitude", lat_name="latitude", r_planet=EARTH_RADIUS
+):
+    """
+    Calculate spatial integral of xarray.DataArray with grid cell weighting.
+
+    Parameters
+    ----------
+    xr_da: xarray.DataArray
+        Data to average
+    lon_name: str, optional
+        Name of x-coordinate
+    lat_name: str, optional
+        Name of y-coordinate
+    r_planet: float
+        Radius of the planet [metres], currently assumed spherical (not important anyway)
+
+    Returns
+    -------
+    xarray.DataArray
+        Spatially averaged xarray.DataArray.
+    """
+    lon = xr_da[lon_name].values
+    lat = xr_da[lat_name].values
+
+    area_weights = grid_cell_areas(lon, lat, r_planet=r_planet)
+
+    return (xr_da * area_weights).sum(dim=[lon_name, lat_name])
+
+
+def time_mean(xr_da, time_name="time"):
+    """
+    Calculate a time average of an `xarray.DataArray`.
+
+    Parameters
+    ----------
+    xr_da: xarray.DataArray
+        Data array with a time coordinate.
+    time_name: str, optional
+        Name of t-coordinate
+
+    Returns
+    -------
+    xarray.DataArray
+        Array averaged over the time dimension.
+    """
+    xr_da_mean = xr_da.mean(dim=time_name)
+    xr_da_mean.attrs.update(xr_da.attrs)
+    return xr_da_mean
+
+
+def wind_rot_div(u, v, truncation=None, const=None):
+    """Split the wind field into divergent and zonal mean and eddy rotational components."""
+    from windspharm.xarray import VectorWind
+
+    vec = VectorWind(u, v, rsphere=const.rplanet_m)
+    div_cmpnt_u, div_cmpnt_v, rot_cmpnt_u, rot_cmpnt_v = vec.helmholtz(
+        truncation=truncation
+    )
+    out = {}
+    out["u_total"] = u
+    out["v_total"] = v
+    out["u_div"] = div_cmpnt_u.rename("irrotational_eastward_wind")
+    out["v_div"] = div_cmpnt_v.rename("irrotational_northward_wind")
+    out["u_rot"] = rot_cmpnt_u.rename("non_divergent_eastward_wind")
+    out["v_rot"] = rot_cmpnt_v.rename("non_divergent_northward_wind")
+
+    out["u_rot_zm"] = xr.broadcast(zonal_mean(rot_cmpnt_u), u)[0].rename(
+        "zonal_mean_of_non_divergent_eastward_wind"
+    )
+    out["v_rot_zm"] = xr.broadcast(zonal_mean(rot_cmpnt_v), v)[0].rename(
+        "zonal_mean_of_non_divergent_northward_wind"
+    )
+    out["u_rot_eddy"] = (rot_cmpnt_u - out["u_rot_zm"]).rename(
+        "zonal_deviation_of_non_divergent_eastward_wind"
+    )
+    out["v_rot_eddy"] = (rot_cmpnt_v - out["v_rot_zm"]).rename(
+        "zonal_deviation_of_non_divergent_northward_wind"
+    )
+    return xr.Dataset(out)
 
 
 def zonal_mass_streamfunction(
@@ -801,32 +931,21 @@ def zonal_mass_streamfunction(
     return const * reverse_along_dim(walker, lev_name)
 
 
-def wind_rot_div(u, v, truncation=None, const=None):
-    """Split the wind field into divergent and zonal mean and eddy rotational components."""
-    from windspharm.xarray import VectorWind
+def zonal_mean(xr_da, lon_name="longitude"):
+    """
+    Calculate a zonal average of an `xarray.DataArray`.
 
-    vec = VectorWind(u, v, rsphere=const.rplanet_m)
-    div_cmpnt_u, div_cmpnt_v, rot_cmpnt_u, rot_cmpnt_v = vec.helmholtz(
-        truncation=truncation
-    )
-    out = {}
-    out["u_total"] = u
-    out["v_total"] = v
-    out["u_div"] = div_cmpnt_u.rename("irrotational_eastward_wind")
-    out["v_div"] = div_cmpnt_v.rename("irrotational_northward_wind")
-    out["u_rot"] = rot_cmpnt_u.rename("non_divergent_eastward_wind")
-    out["v_rot"] = rot_cmpnt_v.rename("non_divergent_northward_wind")
+    Parameters
+    ----------
+    xr_da: xarray.DataArray
+        Data array with a longitude coordinate.
+    lon_name: str, optional
+        Name of x-coordinate
 
-    out["u_rot_zm"] = xr.broadcast(zonal_mean(rot_cmpnt_u), u)[0].rename(
-        "zonal_mean_of_non_divergent_eastward_wind"
-    )
-    out["v_rot_zm"] = xr.broadcast(zonal_mean(rot_cmpnt_v), v)[0].rename(
-        "zonal_mean_of_non_divergent_northward_wind"
-    )
-    out["u_rot_eddy"] = (rot_cmpnt_u - out["u_rot_zm"]).rename(
-        "zonal_deviation_of_non_divergent_eastward_wind"
-    )
-    out["v_rot_eddy"] = (rot_cmpnt_v - out["v_rot_zm"]).rename(
-        "zonal_deviation_of_non_divergent_northward_wind"
-    )
-    return xr.Dataset(out)
+    Returns
+    -------
+    xarray.DataArray
+        Array averaged over the longitudes.
+    """
+    xr_da_mean = xr_da.mean(dim=lon_name)
+    return xr_da_mean
