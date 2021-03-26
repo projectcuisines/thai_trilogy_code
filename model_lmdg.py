@@ -91,7 +91,7 @@ def calc_alt_lmdg(
     p1 = pres_i[dict(interlayer=slice(None, -1))]  # lower interface (higher pressure)
     p2 = pres_i[dict(interlayer=slice(1, None))]  # upper interface (lower pressure)
     # Reassign the coordinate to midlayers to be compatible
-    # with the vertical coordinate of`temp_v`
+    # with the vertical coordinate of `temp_v`
     p1 = p1.rename(interlayer=lmdg.z).assign_coords(altitude=temp_v.altitude)
     p2 = p2.rename(interlayer=lmdg.z).assign_coords(altitude=temp_v.altitude)
     # Calculate the geopotential height thickness of each layer
