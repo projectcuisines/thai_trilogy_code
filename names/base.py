@@ -37,6 +37,8 @@ class Model:
     toa_crf_lw: str = None
     toa_net_lw: str = None
     toa_net_sw: str = None
+    toa_net_lw_cs: str = None
+    toa_net_sw_cs: str = None
     toa_isr: str = None
     toa_olr: str = None
     toa_olr_cs: str = None
