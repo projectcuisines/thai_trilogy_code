@@ -17,6 +17,7 @@ dependencies:
 - loguru
 - matplotlib>=3.0
 - metpy
+- nc-time-axis>=1.2
 - netCDF4
 - numpy
 - pandas
