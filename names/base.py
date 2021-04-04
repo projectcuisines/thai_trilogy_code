@@ -45,6 +45,7 @@ class Model:
     toa_osr: str = None
     toa_osr_cs: str = None
     sfc_dn_lw: str = None
+    sfc_up_lw: str = None
     sfc_dn_lw_cs: str = None
     sfc_dn_sw: str = None
     sfc_dn_sw_cs: str = None
@@ -106,6 +107,7 @@ class Model:
     # Soil
     soil_moist: str = None
     # Total column
+    cwp: str = None
     lwp: str = None
     iwp: str = None
     wvp: str = None

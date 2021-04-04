@@ -2,6 +2,8 @@
 """Functions to load and clean up THAI data."""
 import dask
 
+import numpy as np
+
 import xarray as xr
 
 from model_exocam import adjust_exocam_grid
@@ -41,6 +43,13 @@ def load_lmdg(case):
         concat_dim=lmdg.t,
         chunks=LOAD_CONF["LMDG"]["chunks"],
     )
+    # Assign CF-compliant time units
+    # Otherwise the time has no units and resets to 0 in each of the files.
+    delta = np.diff(ds[lmdg.t].values)
+    delta[delta < 0] = delta[0]
+    new_vals = np.cumsum(np.hstack([0, delta])) + delta[0]
+    ds = ds.assign_coords(**{lmdg.t: new_vals})
+    ds[lmdg.t].attrs["units"] = "days since 2000-01-01 00:00:00"
     return ds
 
 
