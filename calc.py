@@ -14,11 +14,15 @@ from grid import (
 
 __all__ = (
     "brunt_vaisala_frequency",
+    "dayside_mean",
+    "get_time_rel_days",
+    "global_mean",
     "integral",
     "hdiv",
     "mass_weighted_vertical_integral",
     "meridional_mean",
     "moist_static_energy",
+    "nightside_mean",
     "nondim_rossby_deformation_radius",
     "potential_temperature",
     "rossby_deformation_radius_isothermal",
@@ -26,6 +30,7 @@ __all__ = (
     "scale_height",
     "spatial_mean",
     "spatial_sum",
+    "terminator_mean",
     "time_mean",
     "vert_mer_mean_of_mse_flux",
     "wind_rot_div",
@@ -949,3 +954,47 @@ def zonal_mean(xr_da, lon_name="longitude"):
     """
     xr_da_mean = xr_da.mean(dim=lon_name)
     return xr_da_mean
+
+
+def global_mean(arr, model_names):
+    """Find a day-side average of THAI data array."""
+    return spatial_mean(arr, model_names.x, model_names.y)
+
+
+def dayside_mean(arr, model_names):
+    """Find a day-side average of THAI data array."""
+    # Assume the longitude span is -180 to +180 and SS point is at 0deg
+    out = arr.where(abs(arr[model_names.x]) < 90)
+    return spatial_mean(out, model_names.x, model_names.y)
+
+
+def nightside_mean(arr, model_names):
+    """Find a night-side average of THAI data array."""
+    # Assume the longitude span is -180 to +180 and SS point is at 0deg
+    out = arr.where(abs(arr[model_names.x]) > 90)
+    return spatial_mean(out, model_names.x, model_names.y)
+
+
+def terminator_mean(arr, model_names):
+    """Find terminators average of THAI data array."""
+    # Assume the longitude span is -180 to +180
+    out = arr.interp(**{model_names.x: [-90, 90]})
+    return spatial_mean(out, model_names.x, model_names.y)
+
+
+def get_time_rel_days(da_time):
+    """Convert points of a time coordinate to relative number of days."""
+    vals = da_time.values.astype(float)
+    rel_vals = vals - vals[0]
+    units = da_time.units
+    if isinstance(units, xr.DataArray):
+        units = str(da_time.units.values)
+    if units.lower().startswith("day"):
+        return rel_vals
+    elif units.lower().startswith("hour"):
+        indicator = "h"
+    elif units.lower().startswith("second"):
+        indicator = "s"
+    rel_vals = rel_vals.astype(f"timedelta64[{indicator}]")
+    # convert to days
+    return rel_vals / np.timedelta64(1, "D")

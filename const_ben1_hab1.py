@@ -17,6 +17,7 @@ mw_vapor = 18.01528  # water molecular weight [g/mol]
 mw_ratio = mw_dryair / mw_vapor  # ratio of mw_dryair by mw_vapor
 latent_heat = 2_501_000  # latent heat of vaporization [J kg-1]
 mgas_constant = 8.31446261815324  # molecular gas constant [J kg-1 mol-1]
+t_melt = 273.15  # Melting point of the condensible species [K]
 
 # PLANETS PROPERTIES
 planet_dfactor = 0.920  # TRAPPIST-1e diameter [Earth diameter unit]
