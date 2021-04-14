@@ -17,6 +17,7 @@ from aeolus.plot import (
 )
 from aeolus.model import um
 
+from calc import spatial_mean
 from grid import add_cyclic_point_to_da
 
 
@@ -233,3 +234,23 @@ def linspace_pm1(n):
     """Return 2n evenly spaced numbers from -1 to 1, always skipping 0."""
     seq = np.linspace(0, 1, n + 1)
     return np.concatenate([-seq[1:][::-1], seq[1:]])
+
+
+def darr_stats_string(darr, lon_name, lat_name, sep=" | "):
+    """Return min, mean and max of an `xarray.DataArray` as a string."""
+    # Compute the stats
+    _min = darr.min()
+    #_mean = darr.mean()
+    _mean = spatial_mean(darr, lon_name=lon_name, lat_name=lat_name)
+    _max = darr.max()
+    # Assemble a string
+    txts = []
+    if (np.log10(abs(_mean)) < 0) or (np.log10(abs(_mean)) > 5):
+        txts.append(f"min={_min.values:.0e}")
+        txts.append(f"mean={_mean.values:.0e}")
+        txts.append(f"max={_max.values:.0e}")
+    else:
+        txts.append(f"min={np.round(_min.values):.0f}")
+        txts.append(f"mean={np.round(_mean.values):.0f}")
+        txts.append(f"max={np.round(_max.values):.0f}")
+    return sep.join(txts)
