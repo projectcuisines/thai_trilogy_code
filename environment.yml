@@ -2,20 +2,19 @@ name: thai
 channels:
 - conda-forge
 dependencies:
-- aeolus>=0.4.8
+- aeolus>=0.4.9
 - black
 - cartopy>=0.18
 - dask
 - fastprogress
 - flake8
 - h5netcdf
-- h5py
 - ipykernel
 - ipywidgets
 - iris>=3.0
 - latlon23
 - loguru
-- matplotlib>=3.0
+- matplotlib>=3.4
 - metpy
 - nc-time-axis>=1.2
 - netCDF4
