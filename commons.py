@@ -1,19 +1,19 @@
 """Definitions and objects commonly used between scripts."""
 
 MODELS = {
-    "exocam": {
+    "ExoCAM": {
         "title": "ExoCAM",
         "color": "tab:blue",
     },
-    "lmdg": {
+    "LMDG": {
         "title": "LMD-G",
         "color": "tab:red",
     },
-    "rocke3d": {
+    "ROCKE3D": {
         "title": "ROCKE-3D",
         "color": "tab:green",
     },
-    "um": {
+    "UM": {
         "title": "UM",
         "color": "tab:orange",
     },
