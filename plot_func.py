@@ -6,6 +6,7 @@ import cartopy.crs as ccrs
 from cartopy.util import add_cyclic_point
 
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcol
 
 import numpy as np
 
@@ -240,7 +241,7 @@ def darr_stats_string(darr, lon_name, lat_name, sep=" | "):
     """Return min, mean and max of an `xarray.DataArray` as a string."""
     # Compute the stats
     _min = darr.min()
-    #_mean = darr.mean()
+    # _mean = darr.mean()
     _mean = spatial_mean(darr, lon_name=lon_name, lat_name=lat_name)
     _max = darr.max()
     # Assemble a string
@@ -254,3 +255,17 @@ def darr_stats_string(darr, lon_name, lat_name, sep=" | "):
         txts.append(f"mean={np.round(_mean.values):.0f}")
         txts.append(f"max={np.round(_max.values):.0f}")
     return sep.join(txts)
+
+
+def set_alpha_in_cmap(cmap, min=0, max=1):
+    """Set linearly spaced opacity channel in a matplotlib colormap."""
+    cmap = plt.cm.get_cmap(cmap)
+
+    # Get the colormap colors
+    my_cmap = cmap(np.arange(cmap.N))
+
+    # Set alpha
+    my_cmap[:, -1] = np.linspace(min, max, cmap.N)
+
+    # Create new colormap
+    return mcol.ListedColormap(my_cmap)
