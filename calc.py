@@ -10,9 +10,11 @@ from grid import (
     grid_cell_areas,
     reverse_along_dim,
 )
+import names
 
 
 __all__ = (
+    "bond_albedo",
     "brunt_vaisala_frequency",
     "dayside_mean",
     "get_time_rel_days",
@@ -78,6 +80,37 @@ def _integrate_generic(ds, coord, dim):
     return ds._replace_with_new_dims(
         variables, coord_names=coord_names, indexes=indexes
     )
+
+
+def bond_albedo(ds, model_key):
+    r"""
+    Calculate Bond albedo.
+
+    .. math::
+        \alpha_b = \frac{OSR_{TOA}}{ISR_{TOA}}
+
+    Parameters
+    ----------
+    ds: xarray.Dataset
+        Input dataset containing relevant variables.
+    model_key: str,
+        Model name.
+
+    Returns
+    -------
+    xarray.DataArray
+    """
+    model_names = getattr(names, model_key.lower())
+    if model_key == "ExoCAM":
+        toa_osr = ds[model_names.toa_isr] - ds[model_names.toa_net_sw]
+    elif model_key == "LMDG":
+        toa_osr = ds[model_names.toa_isr] - ds[model_names.toa_net_sw]
+    elif model_key == "ROCKE3D":
+        toa_osr = ds[model_names.toa_isr] - ds[model_names.toa_net_sw]
+    elif model_key == "UM":
+        toa_osr = ds[model_names.toa_osr]
+    alb = spatial_mean(toa_osr / ds[model_names.toa_isr], model_names.x, model_names.y)
+    return alb
 
 
 def brunt_vaisala_frequency(
