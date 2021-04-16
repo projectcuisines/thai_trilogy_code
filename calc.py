@@ -17,6 +17,7 @@ __all__ = (
     "bond_albedo",
     "brunt_vaisala_frequency",
     "dayside_mean",
+    "dry_lapse_rate",
     "get_time_rel_days",
     "global_mean",
     "integral",
@@ -140,7 +141,7 @@ def brunt_vaisala_frequency(
     gravity: float, optional
         Gravity constant [m s-2].
     lev_name: str, optional
-        Name of y-coordinate.
+        Name of the vertical coordinate.
 
     Returns
     -------
@@ -161,6 +162,26 @@ def brunt_vaisala_frequency(
     bv_freq.attrs.update({"units": "s-1"})
 
     return bv_freq
+
+
+def dry_lapse_rate(ds, model_key):
+    """Compute a lapse rate from an n-dimensional THAI dataset."""
+    model_names = getattr(names, model_key.lower())
+    if model_key == "ExoCAM":
+        alt = ds[model_names.z]
+        coord = model_names.lev
+    elif model_key == "LMDG":
+        alt = ds[model_names.lev]
+        coord = model_names.z
+    elif model_key == "ROCKE3D":
+        alt = ds[model_names.z]
+        coord = model_names.lev
+    elif model_key == "UM":
+        alt = ds[model_names.z]
+        coord = model_names.z
+
+    lr = ds[model_names.temp].differentiate(coord) / alt.differentiate(coord)
+    return lr
 
 
 def integral(xr_da, dim, coord=None, datetime_unit=None):
