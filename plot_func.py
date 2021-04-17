@@ -237,7 +237,40 @@ def linspace_pm1(n):
     return np.concatenate([-seq[1:][::-1], seq[1:]])
 
 
-def darr_stats_string(darr, lon_name, lat_name, sep=" | "):
+def unit_format(value, unit="1"):
+    """Prettify numbers with units."""
+    import math
+
+    if unit in ["", "1"]:
+        unit_str = ""
+    else:
+        unit_str = fr'${str(unit).replace(" ", "$ $")}$'
+        if "%" in unit_str:
+            unit_str = unit_str.replace("%", "\%")
+    if value == 1:
+        string = unit_str
+    else:
+        sign = math.copysign(1, value)
+        value = abs(value)
+        exp = math.floor(math.log10(value))
+        base = value / 10 ** exp
+        if exp == 0 or exp == 1:
+            string = fr"${value}$"
+        elif exp == -1:
+            string = fr"${value:0.1f}$"
+        else:
+            if int(base) == 1:
+                string = fr"$10^{{{int(exp):d}}}$"
+            else:
+                string = fr"${int(base):d}\times10^{{{int(exp):d}}}$"
+        if sign < 0:
+            string = r"$-$" + string
+        if not unit == "1":
+            string += fr" {unit_str}"
+    return string
+
+
+def darr_stats_string(darr, lon_name, lat_name, sep=" | ", fmt="auto"):
     """Return min, mean and max of an `xarray.DataArray` as a string."""
     # Compute the stats
     _min = darr.min()
@@ -246,18 +279,23 @@ def darr_stats_string(darr, lon_name, lat_name, sep=" | "):
     _max = darr.max()
     # Assemble a string
     txts = []
-    if (np.log10(abs(_mean)) < 0) or (np.log10(abs(_mean)) > 5):
-        txts.append(f"min={_min.values:.0e}")
-        txts.append(f"mean={_mean.values:.0e}")
-        txts.append(f"max={_max.values:.0e}")
+    if fmt != "auto":
+        txts.append(f"min={_min.values:{fmt}}")
+        txts.append(f"mean={_mean.values:{fmt}}")
+        txts.append(f"max={_max.values:{fmt}}")
     else:
-        txts.append(f"min={np.round(_min.values):.0f}")
-        txts.append(f"mean={np.round(_mean.values):.0f}")
-        txts.append(f"max={np.round(_max.values):.0f}")
+        if (np.log10(abs(_mean)) < 0) or (np.log10(abs(_mean)) > 5):
+            txts.append(f"min={_min.values:.0e}")
+            txts.append(f"mean={_mean.values:.0e}")
+            txts.append(f"max={_max.values:.0e}")
+        else:
+            txts.append(f"min={np.round(_min.values):.0f}")
+            txts.append(f"mean={np.round(_mean.values):.0f}")
+            txts.append(f"max={np.round(_max.values):.0f}")
     return sep.join(txts)
 
 
-def set_alpha_in_cmap(cmap, min=0, max=1):
+def set_alpha_in_cmap(cmap, alpha_min=0, alpha_max=1):
     """Set linearly spaced opacity channel in a matplotlib colormap."""
     cmap = plt.cm.get_cmap(cmap)
 
@@ -265,7 +303,7 @@ def set_alpha_in_cmap(cmap, min=0, max=1):
     my_cmap = cmap(np.arange(cmap.N))
 
     # Set alpha
-    my_cmap[:, -1] = np.linspace(min, max, cmap.N)
+    my_cmap[:, -1] = np.linspace(alpha_min, alpha_max, cmap.N)
 
     # Create new colormap
     return mcol.ListedColormap(my_cmap)
