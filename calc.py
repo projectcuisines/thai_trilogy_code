@@ -164,6 +164,60 @@ def brunt_vaisala_frequency(
     return bv_freq
 
 
+def cre_toa(ds, model_key, kind="total"):
+    r"""
+    Calculate domain-average TOA cloud radiative effect (CRE).
+
+    .. math::
+        CRE_{TOA} = F_{up,clear-sky} - F_{up,all-sky}
+
+    Parameters
+    ----------
+    ds: xarray.Dataset
+        Input dataset containing relevant variables.
+    model_key: str,
+        Model name.
+    kind: str, optional
+        Shortwave ('sw'), longwave ('lw'), or 'total' CRE.
+
+    Returns
+    -------
+    xarray.DataArray
+    """
+    name = f"toa_cloud_radiative_effect_{kind}"
+    model_names = getattr(names, model_key.lower())
+    if kind == "sw":
+        if model_key == "ExoCAM":
+            out = -(ds[model_names.toa_net_sw_cs] - ds[model_names.toa_net_sw])
+        elif model_key == "LMDG":
+            out = -(ds[model_names.toa_net_sw_cs] - ds[model_names.toa_net_sw])
+        elif model_key == "ROCKE3D":
+            # ds.swup_toa_clrsky - (ds.incsw_toa - ds.srnf_toa)
+            out = ds[model_names.toa_osr_cs] - (
+                ds[model_names.toa_isr] - ds[model_names.toa_net_sw]
+            )
+        elif model_key == "UM":
+            out = ds[model_names.toa_osr_cs] - ds[model_names.toa_osr]
+    elif kind == "lw":
+        if model_key == "ExoCAM":
+            out = ds[model_names.toa_net_lw_cs] - ds[model_names.toa_net_lw]
+        elif model_key == "LMDG":
+            out = ds[model_names.toa_olr_cs] - ds[model_names.toa_olr]
+        elif model_key == "ROCKE3D":
+            out = ds[model_names.toa_crf_lw]
+        elif model_key == "UM":
+            out = ds[model_names.toa_olr_cs] - ds[model_names.toa_olr]
+    elif kind == "total":
+        sw = cre_toa(ds, model_key, "sw")
+        lw = cre_toa(ds, model_key, "lw")
+        out = sw + lw
+        out = out.rename(name)
+        return out
+
+    out = out.rename(name)
+    return out
+
+
 def dry_lapse_rate(ds, model_key):
     """Compute a lapse rate from an n-dimensional THAI dataset."""
     model_names = getattr(names, model_key.lower())
