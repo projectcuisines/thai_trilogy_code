@@ -10,16 +10,18 @@ from grid import (
     grid_cell_areas,
     reverse_along_dim,
 )
-import names
+from names import names
 
 
 __all__ = (
     "bond_albedo",
     "brunt_vaisala_frequency",
+    "cre_toa",
     "dayside_mean",
     "dry_lapse_rate",
     "get_time_rel_days",
     "global_mean",
+    "greenhouse_effect",
     "integral",
     "hdiv",
     "mass_weighted_vertical_integral",
@@ -101,7 +103,7 @@ def bond_albedo(ds, model_key):
     -------
     xarray.DataArray
     """
-    model_names = getattr(names, model_key.lower())
+    model_names = names[model_key]
     if model_key == "ExoCAM":
         toa_osr = ds[model_names.toa_isr] - ds[model_names.toa_net_sw]
     elif model_key == "LMDG":
@@ -110,7 +112,7 @@ def bond_albedo(ds, model_key):
         toa_osr = ds[model_names.toa_isr] - ds[model_names.toa_net_sw]
     elif model_key == "UM":
         toa_osr = ds[model_names.toa_osr]
-    alb = spatial_mean(toa_osr / ds[model_names.toa_isr], model_names.x, model_names.y)
+    alb = toa_osr / ds[model_names.toa_isr]
     return alb
 
 
@@ -238,56 +240,48 @@ def dry_lapse_rate(ds, model_key):
     return lr
 
 
-def integral(xr_da, dim, coord=None, datetime_unit=None):
-    """
-    Integrate an `xarray.DataArray` over its dimension(s) or an external N-dim coordinate.
-
-    A hack to extend `xarray.DataArray.integrate()` to a more general case.
+def greenhouse_effect(ds, model_key, const, kind="all_sky"):
+    r"""
+    Calculate the greenhouse effect [K].
 
     Parameters
     ----------
-    xr_da: xarray.DataArray
-        Array to integrate.
-    dim: hashable, or a sequence of hashable
-        Dimension(s) used for the integration.
-    coord: xarray.DataArray, optional
-        External N-dimensional coordinate for integration.
-    datetime_unit: str, optional
-        Can be used to specify the unit if datetime coordinate is used.
-        One of {'Y', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns', 'ps',
-        'fs', 'as'}
+    ds: xarray.Dataset
+        Input dataset containing relevant variables.
+    model_key: str,
+        Model name.
+    kind: str, optional
+        Type of GHE:  "all_sky" or "clear_sky"
 
     Returns
     -------
-    result: xarray.DataArray
-
-    See also
-    --------
-    xarray.DataArray.integrate: xarray function used when `coord` is None
+    xarray.DataArray
     """
-    if coord is None:
-        return xr_da.integrate(coord=dim, datetime_unit=datetime_unit)
-    else:
-        name = xr_da.name
-        coord_name = coord.name
-        units = xr_da.attrs.get("units", None)
-        coord_units = coord.attrs.get("units", None)
-        tmp_ds = xr_da._to_temp_dataset()
-        if isinstance(dim, (list, tuple)):
-            raise ValueError(
-                f"Only 1 dim is allowed when using an external array for integration, {dim} given"
-            )
-        if dim not in coord.dims:
-            raise ValueError(f"{coord} does not have {dim} dimension.")
-        if datetime_unit is not None:
-            raise ValueError(f"Using {coord} with {datetime_unit} is not allowed.")
-        result = _integrate_generic(tmp_ds, coord, dim)
-        result = result.to_array().squeeze().drop_vars("variable")
-        if name is not None and coord_name is not None:
-            result = result.rename(f"integral_of_{name}_wrt_{coord_name}")
-        if units is not None and coord_units is not None:
-            result.attrs["units"] = f"{units} {coord_units}"
-        return result
+    if kind == "all_sky":
+        if model_key == "ExoCAM":
+            olr = ds[names[model_key].toa_net_lw]
+        elif model_key == "LMDG":
+            olr = ds[names[model_key].toa_olr]
+        elif model_key == "ROCKE3D":
+            olr = ds[names[model_key].toa_olr_cs] - ds[names[model_key].toa_crf_lw]
+        elif model_key == "UM":
+            olr = ds[names[model_key].toa_olr]
+    elif kind == "clear_sky":
+        if model_key == "ExoCAM":
+            olr = ds[names[model_key].toa_net_lw_cs]
+        elif model_key == "LMDG":
+            olr = ds[names[model_key].toa_olr_cs]
+        elif model_key == "ROCKE3D":
+            olr = ds[names[model_key].toa_olr_cs]
+        elif model_key == "UM":
+            olr = ds[names[model_key].toa_olr_cs]
+
+    t_sfc = ds[names[model_key].t_sfc]
+    if model_key == "ROCKE3D":
+        t_sfc = t_sfc.copy() + const.t_melt  # convert from degC to K
+
+    out = t_sfc - (olr / const.stefan_boltzmann) ** 0.25
+    return out
 
 
 def hdiv(
@@ -346,6 +340,58 @@ def hdiv(
     )
     h_div = h_div.rename("horizontal_divergence")
     return h_div
+
+
+def integral(xr_da, dim, coord=None, datetime_unit=None):
+    """
+    Integrate an `xarray.DataArray` over its dimension(s) or an external N-dim coordinate.
+
+    A hack to extend `xarray.DataArray.integrate()` to a more general case.
+
+    Parameters
+    ----------
+    xr_da: xarray.DataArray
+        Array to integrate.
+    dim: hashable, or a sequence of hashable
+        Dimension(s) used for the integration.
+    coord: xarray.DataArray, optional
+        External N-dimensional coordinate for integration.
+    datetime_unit: str, optional
+        Can be used to specify the unit if datetime coordinate is used.
+        One of {'Y', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns', 'ps',
+        'fs', 'as'}
+
+    Returns
+    -------
+    result: xarray.DataArray
+
+    See also
+    --------
+    xarray.DataArray.integrate: xarray function used when `coord` is None
+    """
+    if coord is None:
+        return xr_da.integrate(coord=dim, datetime_unit=datetime_unit)
+    else:
+        name = xr_da.name
+        coord_name = coord.name
+        units = xr_da.attrs.get("units", None)
+        coord_units = coord.attrs.get("units", None)
+        tmp_ds = xr_da._to_temp_dataset()
+        if isinstance(dim, (list, tuple)):
+            raise ValueError(
+                f"Only 1 dim is allowed when using an external array for integration, {dim} given"
+            )
+        if dim not in coord.dims:
+            raise ValueError(f"{coord} does not have {dim} dimension.")
+        if datetime_unit is not None:
+            raise ValueError(f"Using {coord} with {datetime_unit} is not allowed.")
+        result = _integrate_generic(tmp_ds, coord, dim)
+        result = result.to_array().squeeze().drop_vars("variable")
+        if name is not None and coord_name is not None:
+            result = result.rename(f"integral_of_{name}_wrt_{coord_name}")
+        if units is not None and coord_units is not None:
+            result.attrs["units"] = f"{units} {coord_units}"
+        return result
 
 
 def mass_weighted_vertical_integral(
