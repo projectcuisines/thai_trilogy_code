@@ -3,7 +3,8 @@
 from pathlib import Path
 
 import cartopy.crs as ccrs
-from cartopy.util import add_cyclic_point
+
+# from cartopy.util import add_cyclic_point
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcol
@@ -12,7 +13,6 @@ import numpy as np
 
 from aeolus.plot import (
     GeoAxesGrid,
-    MidpointNormalize,
     label_global_map_gridlines,
     subplot_label_generator,
 )
@@ -26,7 +26,6 @@ KW_CART = dict(transform=ccrs.PlateCarree())
 KW_SBPLT_LABEL = dict(fontsize="small", pad=5, loc="left")
 KW_MAIN_TTL = dict(fontsize="large", pad=5, loc="center")
 KW_AUX_TTL = dict(fontsize="medium", pad=5, loc="right")
-KW_SYM0 = dict(norm=MidpointNormalize(midpoint=0.0), cmap="coolwarm")
 # Axes grid specs
 KW_AXGR = dict(
     axes_pad=(0.6, 0.5),
@@ -246,7 +245,7 @@ def unit_format(value, unit="1"):
     else:
         unit_str = fr'${str(unit).replace(" ", "$ $")}$'
         if "%" in unit_str:
-            unit_str = unit_str.replace("%", "\%")
+            unit_str = unit_str.replace("%", r"\%")
     if value == 1:
         string = unit_str
     else:
