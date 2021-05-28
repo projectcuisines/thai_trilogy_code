@@ -1006,22 +1006,24 @@ def time_mean(xr_da, time_name="time"):
     return xr_da_mean
 
 
-def upper_atm_vap_mean(ds, model_key, pres_levels=[100]):
-    """Estimate the mean vapour content in the upper atmosphere."""
+def upper_atm_vap_mean(ds, model_key, const, pres_levels=[100]):
+    """Estimate the mean mixing ratio of water vapor in the upper atmosphere."""
     model_names = names[model_key]
-    vrbl_cube = ds[model_names.sh].to_iris()
-    pres_cube = ds[model_names.pres].to_iris()
-    pres_cube.convert_units("Pa")
-    vrbl_cube_on_pres_lev = stratify.relevel(
-        vrbl_cube,
-        pres_cube,
+    spec_hum = ds[model_names.sh].to_iris()
+    mix_ratio = spec_hum / (1 - spec_hum)
+    mix_ratio *= const.mw_ratio
+    pres = ds[model_names.pres].to_iris()
+    pres.convert_units("Pa")
+    mix_ratio_on_pres_lev = stratify.relevel(
+        mix_ratio,
+        pres,
         pres_levels,
-        axis=vrbl_cube.coords(axis="z")[0].name(),
+        axis=mix_ratio.coords(axis="z")[0].name(),
         interpolator=INTERPOLATOR,
     )
-    vrbl_cube_on_pres_lev.coord(pres_cube.name()).attributes = {}
-    vrbl_cube_on_pres_lev = iris.util.squeeze(vrbl_cube_on_pres_lev)
-    return xr.DataArray.from_iris(vrbl_cube_on_pres_lev)
+    mix_ratio_on_pres_lev.coord(pres.name()).attributes = {}
+    mix_ratio_on_pres_lev = iris.util.squeeze(mix_ratio_on_pres_lev)
+    return xr.DataArray.from_iris(mix_ratio_on_pres_lev)
 
 
 def wind_rot_div(u, v, truncation=None, const=None):
