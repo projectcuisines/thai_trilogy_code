@@ -1,5 +1,9 @@
 """Science diagnostics."""
+from functools import partial
 import dask.array as da
+
+import iris
+from iris.experimental import stratify
 
 import numpy as np
 
@@ -37,10 +41,17 @@ __all__ = (
     "spatial_sum",
     "terminator_mean",
     "time_mean",
+    "upper_atm_vap_mean",
     "vert_mer_mean_of_mse_flux",
     "wind_rot_div",
     "zonal_mass_streamfunction",
     "zonal_mean",
+)
+
+INTERPOLATOR = partial(
+    stratify.stratify.interpolate,
+    interpolation=stratify.stratify.INTERPOLATE_LINEAR,
+    extrapolation=stratify.stratify.EXTRAPOLATE_LINEAR,
 )
 
 
@@ -993,6 +1004,24 @@ def time_mean(xr_da, time_name="time"):
     xr_da_mean = xr_da.mean(dim=time_name)
     xr_da_mean.attrs.update(xr_da.attrs)
     return xr_da_mean
+
+
+def upper_atm_vap_mean(ds, model_key, pres_levels=[100]):
+    """Estimate the mean vapour content in the upper atmosphere."""
+    model_names = names[model_key]
+    vrbl_cube = ds[model_names.sh].to_iris()
+    pres_cube = ds[model_names.pres].to_iris()
+    pres_cube.convert_units("Pa")
+    vrbl_cube_on_pres_lev = stratify.relevel(
+        vrbl_cube,
+        pres_cube,
+        pres_levels,
+        axis=vrbl_cube.coords(axis="z")[0].name(),
+        interpolator=INTERPOLATOR,
+    )
+    vrbl_cube_on_pres_lev.coord(pres_cube.name()).attributes = {}
+    vrbl_cube_on_pres_lev = iris.util.squeeze(vrbl_cube_on_pres_lev)
+    return xr.DataArray.from_iris(vrbl_cube_on_pres_lev)
 
 
 def wind_rot_div(u, v, truncation=None, const=None):
