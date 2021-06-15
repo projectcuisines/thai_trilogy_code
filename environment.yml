@@ -2,7 +2,7 @@ name: thai
 channels:
 - conda-forge
 dependencies:
-- aeolus>=0.4.9
+- aeolus>=0.4.11
 - black
 - cartopy>=0.18
 - dask
