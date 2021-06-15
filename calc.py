@@ -37,6 +37,7 @@ __all__ = (
     "rossby_deformation_radius_isothermal",
     "rossby_deformation_radius_stratified",
     "scale_height",
+    "sfc_temp",
     "spatial_mean",
     "spatial_sum",
     "terminator_mean",
@@ -953,6 +954,15 @@ def scale_height(
         Atmospheric scale height [m] of the same shape as `temp`.
     """
     return temp * mgas_constant / (mw_dryair * gravity)
+
+
+def sfc_temp(ds, model_key, const):
+    """Extract surface temperature from a THAI dataset."""
+    model_names = names[model_key]
+    out = ds[model_names.t_sfc].copy()
+    if model_key == "ROCKE3D":
+        out += const.t_melt  # convert from degC to K
+    return out
 
 
 def spatial_sum(
