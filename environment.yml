@@ -20,13 +20,12 @@ dependencies:
 - netCDF4
 - numpy
 - pandas
-- python>=3.9
 - pip
+- pre-commit
+- python>=3.9
 - pytest
 - python-stratify
 - scipy
 - tqdm
 - xarray>=0.17
 - windspharm
-- pip:
-  - imageio_ffmpeg
