@@ -1,0 +1,38 @@
+# NOTE: you have to use single-quoted strings in TOML for regular expressions.
+# It's the equivalent of r-strings in Python.  Multiline strings are treated as
+# verbose regular expressions by Black.  Use [ ] to denote a significant space
+# character.
+[tool.black]
+line-length = 100
+py36 = true
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  # | versioneer.py    # also separately exclude a file in the root of the project
+)
+'''
+
+[tool.isort]
+# check = "True"
+# sort the imports by module, independent of import style.
+force_sort_within_sections = "True"
+filter_files = "True"
+known_first_party = "aeolus"
+known_quasilocal = "pouch"
+line_length = 100
+profile = "black"
+sections=['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'QUASILOCAL', 'LOCALFOLDER']
+skip_gitignore = "True"
+verbose = "False"

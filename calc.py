@@ -1,21 +1,15 @@
+# -*- coding: utf-8 -*-
 """Science diagnostics."""
 from functools import partial
-import dask.array as da
 
+import dask.array as da
 import iris
 from iris.experimental import stratify
-
 import numpy as np
-
 import xarray as xr
 
-from grid import (
-    EARTH_RADIUS,
-    grid_cell_areas,
-    reverse_along_dim,
-)
+from grid import EARTH_RADIUS, grid_cell_areas, reverse_along_dim
 from names import names
-
 
 __all__ = (
     "bond_albedo",
@@ -105,9 +99,7 @@ def _integrate_generic(ds, coord, dim):
             else:
                 variables[k] = v
     indexes = {k: v for k, v in ds.indexes.items() if k in variables}
-    return ds._replace_with_new_dims(
-        variables, coord_names=coord_names, indexes=indexes
-    )
+    return ds._replace_with_new_dims(variables, coord_names=coord_names, indexes=indexes)
 
 
 def bond_albedo(ds, model_key):
@@ -208,9 +200,7 @@ def cloud_mmr_ice(ds, model_key):
     if model_key == "LMDG":
         t_min = 258
         t_max = 273
-        scaling = (np.clip(ds[model_names.temp], t_min, t_max) - t_min) / (
-            t_max - t_min
-        )
+        scaling = (np.clip(ds[model_names.temp], t_min, t_max) - t_min) / (t_max - t_min)
         out = ds[model_names.cld_ice_mf] * (1 - scaling)
     else:
         out = ds[model_names.cld_ice_mf]
@@ -223,9 +213,7 @@ def cloud_mmr_liquid(ds, model_key):
     if model_key == "LMDG":
         t_min = 258
         t_max = 273
-        scaling = (np.clip(ds[model_names.temp], t_min, t_max) - t_min) / (
-            t_max - t_min
-        )
+        scaling = (np.clip(ds[model_names.temp], t_min, t_max) - t_min) / (t_max - t_min)
         out = ds[model_names.cld_ice_mf] * scaling
     else:
         out = ds[model_names.cld_liq_mf]
@@ -290,6 +278,7 @@ def cloud_path_liquid(ds, model_key):
     elif model_key == "UM":
         out = ds[model_names.lwp]
     return out
+
 
 def cloud_path_total(ds, model_key):
     """Extract total cloud water path from a THAI dataset."""
@@ -422,9 +411,7 @@ def greenhouse_effect(ds, model_key, const, kind="all_sky"):
     return out
 
 
-def hdiv(
-    i_arr, j_arr, lon_name="longitude", lat_name="latitude", r_planet=EARTH_RADIUS
-):
+def hdiv(i_arr, j_arr, lon_name="longitude", lat_name="latitude", r_planet=EARTH_RADIUS):
     r"""
     Calculate horizontal divergence of two components of a vector as `xarray.DataArray`s.
 
@@ -563,18 +550,14 @@ def mass_weighted_vertical_integral(
         # Integrate along the height coordinate
         if rho is None:
             # weight by air density
-            raise ValueError(
-                "`rho` array is required to do weighting for 'height'-coordinate"
-            )
+            raise ValueError("`rho` array is required to do weighting for 'height'-coordinate")
         # if isinstance(coord, collections.abc.Hashable):
         integ = integral(rho * xr_da, dim=dim, coord=coord)
         # integ /= integral(rho, dim=dim, coord=coord)
     elif coord_type == "pressure":
         # Integrate along the pressure coordinate
         if gravity is None:
-            raise ValueError(
-                "`gravity` is required to do weighting for 'pressure'-coordinate"
-            )
+            raise ValueError("`gravity` is required to do weighting for 'pressure'-coordinate")
         integ = -integral(xr_da, dim=dim, coord=coord) / gravity
     return integ
 
@@ -850,9 +833,7 @@ def nondim_rossby_deformation_radius(
         Rossby radius of deformation divided by the radius of the planet.
     """
     if method == "isothermal":
-        temp_mean = spatial_mean(temp, lon_name=lon_name, lat_name=lat_name).mean(
-            dim=time_name
-        )
+        temp_mean = spatial_mean(temp, lon_name=lon_name, lat_name=lat_name).mean(dim=time_name)
         rossby_def_rad = rossby_deformation_radius_isothermal(
             temp=temp_mean,
             period=period,
@@ -872,9 +853,9 @@ def nondim_rossby_deformation_radius(
             mgas_constant=mgas_constant,
             lev_name=lev_name,
         )
-        rossby_def_rad = spatial_mean(
-            rossby_def_rad, lon_name=lon_name, lat_name=lat_name
-        ).mean(dim=[time_name, lev_name])
+        rossby_def_rad = spatial_mean(rossby_def_rad, lon_name=lon_name, lat_name=lat_name).mean(
+            dim=[time_name, lev_name]
+        )
 
     return rossby_def_rad / r_planet
 
@@ -1090,6 +1071,7 @@ def sfc_temp(ds, model_key, const):
         out += const.t_melt  # convert from degC to K
     return out
 
+
 def sfc_dn_lw_flux(ds, model_key, const):
     """Calculate the downward longwave radiative flux at the surface."""
     net_flux = sfc_net_up_lw_flux(ds, model_key, const)
@@ -1123,9 +1105,7 @@ def sfc_net_up_lw_flux(ds, model_key, const):
     return out
 
 
-def spatial_sum(
-    xr_da, lon_name="longitude", lat_name="latitude", r_planet=EARTH_RADIUS
-):
+def spatial_sum(xr_da, lon_name="longitude", lat_name="latitude", r_planet=EARTH_RADIUS):
     """
     Calculate spatial integral of xarray.DataArray with grid cell weighting.
 
@@ -1155,7 +1135,7 @@ def spatial_sum(
 
 def specific_humidity(ds, model_key):
     """Extract specific humidity from a THAI dataset."""
-    model_names = names[model_key]
+    names[model_key]
     if model_key == "LMDG":
         # LMD-G outputs mixing ratio instead of specific humidity,
         # so here MR is converted to SH.
@@ -1229,9 +1209,7 @@ def wind_rot_div(u, v, truncation=None, const=None):
     from windspharm.xarray import VectorWind
 
     vec = VectorWind(u, v, rsphere=const.rplanet_m)
-    div_cmpnt_u, div_cmpnt_v, rot_cmpnt_u, rot_cmpnt_v = vec.helmholtz(
-        truncation=truncation
-    )
+    div_cmpnt_u, div_cmpnt_v, rot_cmpnt_u, rot_cmpnt_v = vec.helmholtz(truncation=truncation)
     out = {}
     out["u_total"] = u
     out["v_total"] = v

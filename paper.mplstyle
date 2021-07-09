@@ -4,7 +4,7 @@ mathtext.default : regular # The default font to use for math.
                        # Can be any of the LaTeX font names, including
                        # the special name "regular" for the same font
                        # used in regular text.
-                       
+
 font.size           : 12.0
 legend.fontsize : 16
 axes.labelsize : 14

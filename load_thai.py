@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 """Functions to load and clean up THAI data."""
 import dask
-
 import numpy as np
-
 import xarray as xr
 
 from model_exocam import adjust_exocam_grid

@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 """Functionality related to cartesian geographical grids of xarray Data Arrays."""
 import dask.array as da
-
 import numpy as np
-
 import xarray as xr
-
 
 EARTH_RADIUS = 6371000.0  # m
 

@@ -5,7 +5,6 @@ import dask.array as da
 from grid import add_cyclic_point_to_da, reverse_along_dim
 from names import exocam
 
-
 __all__ = ("adjust_exocam_grid", "calc_pres_exocam", "calc_virtual_temp_exocam")
 
 

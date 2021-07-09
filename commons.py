@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Definitions and objects commonly used between scripts."""
 
 MODELS = {

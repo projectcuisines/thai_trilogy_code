@@ -3,23 +3,16 @@
 from pathlib import Path
 
 import cartopy.crs as ccrs
-
-# from cartopy.util import add_cyclic_point
-
-import matplotlib.pyplot as plt
 import matplotlib.colors as mcol
-
+import matplotlib.pyplot as plt
 import numpy as np
 
-from aeolus.plot import (
-    GeoAxesGrid,
-    label_global_map_gridlines,
-    subplot_label_generator,
-)
 from aeolus.model import um
-
+from aeolus.plot import GeoAxesGrid, label_global_map_gridlines, subplot_label_generator
 from calc import spatial_mean
 from grid import add_cyclic_point_to_da
+
+# from cartopy.util import add_cyclic_point
 
 
 KW_CART = dict(transform=ccrs.PlateCarree())
@@ -65,9 +58,7 @@ def make_map_figure(ncols, nrows, rect=111, **axgr_kw):
 
     fig = plt.figure(figsize=(8 * ncols, 4 * nrows))
 
-    axgr = GeoAxesGrid(
-        fig, rect, projection=ccrs.Robinson(), nrows_ncols=(nrows, ncols), **axgr_kw
-    )
+    axgr = GeoAxesGrid(fig, rect, projection=ccrs.Robinson(), nrows_ncols=(nrows, ncols), **axgr_kw)
     for ax in axgr.axes_all:
         label_global_map_gridlines(
             fig, ax, XLOCS[1:-1], YLOCS[1:-1], degree=True, size="x-small", xoff=-15

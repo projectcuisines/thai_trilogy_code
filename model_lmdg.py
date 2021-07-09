@@ -4,7 +4,6 @@ import dask.array as da
 
 from names import lmdg
 
-
 __all__ = ("calc_alt_lmdg", "calc_virtual_temp_lmdg")
 
 

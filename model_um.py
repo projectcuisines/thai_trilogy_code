@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 """Utilities for the Unified Model output."""
 import dask.array as da
-
 import numpy as np
-
 import xarray as xr
 
 from grid import reverse_along_dim, roll_da_to_pm180
 from names import um
-
 
 __all__ = (
     "adjust_um_grid",
@@ -140,9 +137,7 @@ def open_mf_um(files, main_time, rad_time, **kw_open):
         target_time = ds[main_time]
         for d in ds.data_vars:
             if rad_time in ds[d].dims:
-                var = ds[d].interp(
-                    **{rad_time: target_time}, kwargs={"fill_value": "extrapolate"}
-                )
+                var = ds[d].interp(**{rad_time: target_time}, kwargs={"fill_value": "extrapolate"})
                 var = var.drop_vars(rad_time)
             else:
                 var = ds[d]

@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 """Utilities for the ROCKE3D output."""
 import dask.array as da
-
 import xarray as xr
 
 from grid import reverse_along_dim, roll_da_to_pm180
 from model_um import calc_um_rel
 from names import rocke3d
-
 
 __all__ = ("adjust_rocke3d_grid", "calc_rocke3d_rei", "calc_rocke3d_rel")
 
