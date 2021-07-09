@@ -23,7 +23,7 @@ from grid import add_cyclic_point_to_da
 
 
 KW_CART = dict(transform=ccrs.PlateCarree())
-KW_SBPLT_LABEL = dict(fontsize="small", pad=5, loc="left")
+KW_SBPLT_LABEL = dict(fontsize="x-large", fontweight="bold", pad=5, loc="left")
 KW_MAIN_TTL = dict(fontsize="large", pad=5, loc="center")
 KW_AUX_TTL = dict(fontsize="medium", pad=5, loc="right")
 # Axes grid specs

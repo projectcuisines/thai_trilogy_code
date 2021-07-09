@@ -20,6 +20,15 @@ from names import names
 __all__ = (
     "bond_albedo",
     "brunt_vaisala_frequency",
+    "cloud_area_fraction",
+    "cloud_mmr_ice",
+    "cloud_mmr_liquid",
+    "cloud_volume_fraction_ice",
+    "cloud_volume_fraction_liquid",
+    "cloud_volume_fraction_total",
+    "cloud_path_ice",
+    "cloud_path_liquid",
+    "cloud_path_total",
     "cre_toa",
     "dayside_mean",
     "dry_lapse_rate",
@@ -37,11 +46,15 @@ __all__ = (
     "rossby_deformation_radius_isothermal",
     "rossby_deformation_radius_stratified",
     "scale_height",
+    "sfc_dn_lw_flux",
+    "sfc_net_up_lw_flux",
     "sfc_temp",
+    "specific_humidity",
     "spatial_mean",
     "spatial_sum",
     "terminator_mean",
     "time_mean",
+    "toa_olr",
     "upper_atm_vap_mean",
     "vert_mer_mean_of_mse_flux",
     "wind_rot_div",
@@ -178,6 +191,119 @@ def brunt_vaisala_frequency(
     return bv_freq
 
 
+def cloud_area_fraction(ds, model_key):
+    """Extract cloud fraction from a THAI dataset."""
+    model_names = names[model_key]
+    if model_key == "ROCKE3D":
+        out = ds[model_names.caf]
+    else:
+        # input in [0-1]
+        out = ds[model_names.caf] * 100
+    return out
+
+
+def cloud_mmr_ice(ds, model_key):
+    """Extract ice cloud MMR on levels from a THAI dataset."""
+    model_names = names[model_key]
+    if model_key == "LMDG":
+        t_min = 258
+        t_max = 273
+        scaling = (np.clip(ds[model_names.temp], t_min, t_max) - t_min) / (
+            t_max - t_min
+        )
+        out = ds[model_names.cld_ice_mf] * (1 - scaling)
+    else:
+        out = ds[model_names.cld_ice_mf]
+    return out
+
+
+def cloud_mmr_liquid(ds, model_key):
+    """Extract liquid cloud MMR on levels from a THAI dataset."""
+    model_names = names[model_key]
+    if model_key == "LMDG":
+        t_min = 258
+        t_max = 273
+        scaling = (np.clip(ds[model_names.temp], t_min, t_max) - t_min) / (
+            t_max - t_min
+        )
+        out = ds[model_names.cld_ice_mf] * scaling
+    else:
+        out = ds[model_names.cld_liq_mf]
+    return out
+
+
+def cloud_volume_fraction_total(ds, model_key):
+    """Extract cloud fraction on levels from a THAI dataset."""
+    model_names = names[model_key]
+    if model_key == "ROCKE3D":
+        out = ds[model_names.cld_liq_v] + ds[model_names.cld_ice_v]
+    else:
+        out = ds[model_names.cld_v]
+    return out * 100
+
+
+def cloud_volume_fraction_ice(ds, model_key):
+    """Extract ice cloud fraction on levels from a THAI dataset."""
+    model_names = names[model_key]
+    if model_key == "ExoCAM":
+        out = ds[model_names.cld_v]
+    elif model_key == "LMDG":
+        out = ds[model_names.cld_v]
+    else:
+        out = ds[model_names.cld_ice_v]
+    return out * 100
+
+
+def cloud_volume_fraction_liquid(ds, model_key):
+    """Extract liquid cloud fraction on levels from a THAI dataset."""
+    model_names = names[model_key]
+    if model_key == "ExoCAM":
+        out = ds[model_names.cld_v]
+    elif model_key == "LMDG":
+        out = ds[model_names.cld_v]
+    else:
+        out = ds[model_names.cld_liq_v]
+    return out * 100
+
+
+def cloud_path_ice(ds, model_key):
+    """Extract ice water path from a THAI dataset."""
+    model_names = names[model_key]
+    if model_key in ["ExoCAM", "ROCKE3D"]:
+        # input in [g m-2]
+        out = ds[model_names.iwp] / 1000
+    elif model_key == "LMDG":
+        out = ds[model_names.cwp]
+    elif model_key == "UM":
+        out = ds[model_names.iwp]
+    return out
+
+
+def cloud_path_liquid(ds, model_key):
+    """Extract ice water path from a THAI dataset."""
+    model_names = names[model_key]
+    if model_key in ["ExoCAM", "ROCKE3D"]:
+        # input in [g m-2]
+        out = ds[model_names.lwp] / 1000
+    elif model_key == "LMDG":
+        out = ds[model_names.cwp]
+    elif model_key == "UM":
+        out = ds[model_names.lwp]
+    return out
+
+def cloud_path_total(ds, model_key):
+    """Extract total cloud water path from a THAI dataset."""
+    model_names = names[model_key]
+    if model_key in ["ExoCAM", "ROCKE3D"]:
+        # input in [g m-2]
+        out = (ds[model_names.lwp] + ds[model_names.iwp]) / 1000
+    elif model_key == "LMDG":
+        out = ds[model_names.cwp]
+    elif model_key == "UM":
+        out = ds[model_names.lwp] + ds[model_names.iwp]
+    return out
+
+
 def cre_toa(ds, model_key, kind="total"):
     r"""
     Calculate domain-average TOA cloud radiative effect (CRE).
@@ -199,7 +325,7 @@ def cre_toa(ds, model_key, kind="total"):
     xarray.DataArray
     """
     name = f"toa_cloud_radiative_effect_{kind}"
-    model_names = getattr(names, model_key.lower())
+    model_names = names[model_key]
     if kind == "sw":
         if model_key == "ExoCAM":
             out = -(ds[model_names.toa_net_sw_cs] - ds[model_names.toa_net_sw])
@@ -234,7 +360,7 @@ def cre_toa(ds, model_key, kind="total"):
 
 def dry_lapse_rate(ds, model_key):
     """Compute a lapse rate from an n-dimensional THAI dataset."""
-    model_names = getattr(names, model_key.lower())
+    model_names = names[model_key]
     if model_key == "ExoCAM":
         alt = ds[model_names.z]
         coord = model_names.lev
@@ -964,6 +1090,38 @@ def sfc_temp(ds, model_key, const):
         out += const.t_melt  # convert from degC to K
     return out
 
+def sfc_dn_lw_flux(ds, model_key, const):
+    """Calculate the downward longwave radiative flux at the surface."""
+    net_flux = sfc_net_up_lw_flux(ds, model_key, const)
+    up_flux = const.stefan_boltzmann * sfc_temp(ds, model_key, const) ** 4
+    return up_flux - net_flux
+
+
+def sfc_net_up_lw_flux(ds, model_key, const):
+    r"""
+    Calculate the net downward longwave radiative flux at the surface.
+
+    Parameters
+    ----------
+    ds: xarray.Dataset
+        Input dataset containing relevant variables.
+    model_key: str,
+        Model name.
+
+    Returns
+    -------
+    xarray.DataArray
+    """
+    if model_key == "ExoCAM":
+        out = ds[names[model_key].sfc_net_down_lw]
+    elif model_key == "LMDG":
+        out = -ds[names[model_key].sfc_net_down_lw]
+    elif model_key == "ROCKE3D":
+        out = -(ds[names[model_key].sfc_dn_lw] - ds[names[model_key].sfc_up_lw])
+    elif model_key == "UM":
+        out = -ds[names[model_key].sfc_net_down_lw]
+    return out
+
 
 def spatial_sum(
     xr_da, lon_name="longitude", lat_name="latitude", r_planet=EARTH_RADIUS
@@ -995,6 +1153,18 @@ def spatial_sum(
     return (xr_da * area_weights).sum(dim=[lon_name, lat_name])
 
 
+def specific_humidity(ds, model_key):
+    """Extract specific humidity from a THAI dataset."""
+    model_names = names[model_key]
+    if model_key == "LMDG":
+        # LMD-G outputs mixing ratio instead of specific humidity,
+        # so here MR is converted to SH.
+        out = 1 / (ds.sh + 1)
+    else:
+        out = ds.sh
+    return out
+
+
 def time_mean(xr_da, time_name="time"):
     """
     Calculate a time average of an `xarray.DataArray`.
@@ -1016,11 +1186,29 @@ def time_mean(xr_da, time_name="time"):
     return xr_da_mean
 
 
+def toa_olr(ds, model_key, case, const):
+    """Extract top-of-the-atmosphere outgoing longwave radiation from a THAI dataset."""
+    model_names = names[model_key]
+    if model_key == "ExoCAM":
+        out = ds[model_names.toa_net_lw]
+    elif model_key == "LMDG":
+        out = ds[model_names.toa_olr]
+    elif model_key == "ROCKE3D":
+        out = ds[model_names.toa_olr_cs] - ds[model_names.toa_crf_lw]
+    elif model_key == "UM":
+        out = ds[model_names.toa_olr]
+    return out
+
+
 def upper_atm_vap_mean(ds, model_key, const, pres_levels=[100]):
     """Estimate the mean mixing ratio of water vapor in the upper atmosphere."""
     model_names = names[model_key]
     spec_hum = ds[model_names.sh].to_iris()
-    mix_ratio = spec_hum / (1 - spec_hum)
+    if model_key == "LMDG":
+        mix_ratio = ds[model_names.sh].to_iris()
+    else:
+        spec_hum = ds[model_names.sh].to_iris()
+        mix_ratio = spec_hum / (1 - spec_hum)
     mix_ratio *= const.mw_ratio
     pres = ds[model_names.pres].to_iris()
     pres.convert_units("Pa")
