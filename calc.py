@@ -48,6 +48,7 @@ __all__ = (
     "spatial_sum",
     "terminator_mean",
     "time_mean",
+    "time_std",
     "toa_olr",
     "upper_atm_vap_mean",
     "vert_mer_mean_of_mse_flux",
@@ -1162,6 +1163,27 @@ def time_mean(xr_da, time_name="time"):
         Array averaged over the time dimension.
     """
     xr_da_mean = xr_da.mean(dim=time_name)
+    xr_da_mean.attrs.update(xr_da.attrs)
+    return xr_da_mean
+
+
+def time_std(xr_da, time_name="time"):
+    """
+    Calculate standard deviation along the time axis of an `xarray.DataArray`.
+
+    Parameters
+    ----------
+    xr_da: xarray.DataArray
+        Data array with a time coordinate.
+    time_name: str, optional
+        Name of t-coordinate
+
+    Returns
+    -------
+    xarray.DataArray
+        Array collapsed over the time dimension.
+    """
+    xr_da_mean = xr_da.std(dim=time_name)
     xr_da_mean.attrs.update(xr_da.attrs)
     return xr_da_mean
 
