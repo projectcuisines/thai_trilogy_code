@@ -31,6 +31,8 @@ __all__ = (
     "greenhouse_effect",
     "integral",
     "hdiv",
+    "heating_rate_lw",
+    "heating_rate_sw",
     "mass_weighted_vertical_integral",
     "meridional_mean",
     "moist_static_energy",
@@ -466,6 +468,38 @@ def hdiv(i_arr, j_arr, lon_name="longitude", lat_name="latitude", r_planet=EARTH
     )
     h_div = h_div.rename("horizontal_divergence")
     return h_div
+
+
+def heating_rate_sw(ds, model_key):
+    """Extract shortwave heating rate [K day-1] from a THAI dataset."""
+    sec_in_day = 86400
+    model_names = names[model_key]
+    if model_key == "ExoCAM":
+        out = ds[model_names.dt_sw]
+    elif model_key == "LMDG":
+        out = ds[model_names.dt_sw] * sec_in_day
+    elif model_key == "ROCKE3D":
+        out = ds[model_names.dt_sw] * sec_in_day
+    elif model_key == "UM":
+        out = ds[model_names.dt_sw] * sec_in_day
+    out.attrs["units"] = "K day-1"
+    return out
+
+
+def heating_rate_lw(ds, model_key):
+    """Extract longwave heating rate [K day-1] from a THAI dataset."""
+    sec_in_day = 86400
+    model_names = names[model_key]
+    if model_key == "ExoCAM":
+        out = ds[model_names.dt_lw]
+    elif model_key == "LMDG":
+        out = ds[model_names.dt_lw] * sec_in_day
+    elif model_key == "ROCKE3D":
+        out = ds[model_names.dt_lw] * sec_in_day
+    elif model_key == "UM":
+        out = ds[model_names.dt_lw] * sec_in_day
+    out.attrs["units"] = "K day-1"
+    return out
 
 
 def integral(xr_da, dim, coord=None, datetime_unit=None):

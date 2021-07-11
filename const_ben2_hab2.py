@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """Physical constants for the Ben2 and Hab2/Hab2* experiments of the THAI project."""
+hecto = 100
+kilo = 1000
+
 # ATMOSPHERIC COMPOSITION
 ptot = 1e5  # sufrace pressure [Pa]
 

@@ -7,7 +7,7 @@ mathtext.default : regular # The default font to use for math.
 
 font.size           : 12.0
 legend.fontsize : 16
-axes.labelsize : 14
+axes.labelsize : 16
 axes.titlesize : 18
 xtick.labelsize : 12
 ytick.labelsize : 12
