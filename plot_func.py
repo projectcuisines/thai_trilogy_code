@@ -17,11 +17,11 @@ from grid import add_cyclic_point_to_da
 
 KW_CART = dict(transform=ccrs.PlateCarree())
 KW_SBPLT_LABEL = dict(fontsize="x-large", fontweight="bold", pad=5, loc="left")
-KW_MAIN_TTL = dict(fontsize="large", pad=5, loc="center")
-KW_AUX_TTL = dict(fontsize="medium", pad=5, loc="right")
+KW_MAIN_TTL = dict(fontsize="x-large", pad=5, loc="center")
+KW_AUX_TTL = dict(fontsize="large", pad=5, loc="right")
 # Axes grid specs
 KW_AXGR = dict(
-    axes_pad=(0.6, 0.5),
+    axes_pad=(0.65, 0.5),
     cbar_location="right",
     cbar_mode="single",
     cbar_pad=0.2,
@@ -61,10 +61,10 @@ def make_map_figure(ncols, nrows, rect=111, **axgr_kw):
     axgr = GeoAxesGrid(fig, rect, projection=ccrs.Robinson(), nrows_ncols=(nrows, ncols), **axgr_kw)
     for ax in axgr.axes_all:
         label_global_map_gridlines(
-            fig, ax, XLOCS[1:-1], YLOCS[1:-1], degree=True, size="x-small", xoff=-15
+            fig, ax, XLOCS[1:-1], YLOCS[1:-1], degree=True, size="medium", xoff=-20
         )
         ax.gridlines(xlocs=XLOCS, ylocs=YLOCS, crs=ccrs.PlateCarree())
-        ax.set_title(f"({next(iletters)})", **KW_SBPLT_LABEL)
+        ax.set_title(f"{next(iletters)}", **KW_SBPLT_LABEL)
 
     return fig, axgr
 
