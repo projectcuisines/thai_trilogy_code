@@ -6,11 +6,11 @@ mathtext.default : regular # The default font to use for math.
                        # used in regular text.
 
 font.size           : 12.0
-legend.fontsize : 16
-axes.labelsize : 16
-axes.titlesize : 18
-xtick.labelsize : 12
-ytick.labelsize : 12
+legend.fontsize : 18
+axes.labelsize : 18
+axes.titlesize : 20
+xtick.labelsize : 14
+ytick.labelsize : 14
 
 figure.figsize   : 12, 6.75   # figure size in inches
 figure.dpi       : 150      # figure dots per inch
