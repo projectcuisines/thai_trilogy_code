@@ -1222,7 +1222,7 @@ def time_std(xr_da, time_name="time"):
     return xr_da_mean
 
 
-def toa_olr(ds, model_key, case, const):
+def toa_olr(ds, model_key):
     """Extract top-of-the-atmosphere outgoing longwave radiation from a THAI dataset."""
     model_names = names[model_key]
     if model_key == "ExoCAM":

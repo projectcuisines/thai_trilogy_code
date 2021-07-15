@@ -16,9 +16,9 @@ from grid import add_cyclic_point_to_da
 
 
 KW_CART = dict(transform=ccrs.PlateCarree())
-KW_SBPLT_LABEL = dict(fontsize="x-large", fontweight="bold", pad=5, loc="left")
-KW_MAIN_TTL = dict(fontsize="x-large", pad=5, loc="center")
-KW_AUX_TTL = dict(fontsize="large", pad=5, loc="right")
+KW_SBPLT_LABEL = dict(fontsize="xx-large", fontweight="bold", pad=5, loc="left")
+KW_MAIN_TTL = dict(fontsize="xx-large", pad=5, loc="center")
+KW_AUX_TTL = dict(fontsize="x-large", pad=5, loc="right")
 # Axes grid specs
 KW_AXGR = dict(
     axes_pad=(0.65, 0.5),
@@ -227,7 +227,7 @@ def linspace_pm1(n):
     return np.concatenate([-seq[1:][::-1], seq[1:]])
 
 
-def unit_format(value, unit="1"):
+def unit_format(value, unit="1", decimal_digits=1, precision=None, exponent=None):
     """Prettify numbers with units."""
     import math
 
@@ -240,27 +240,25 @@ def unit_format(value, unit="1"):
     if value == 1:
         string = unit_str
     else:
-        sign = math.copysign(1, value)
-        value = abs(value)
-        exp = math.floor(math.log10(value))
-        base = value / 10 ** exp
-        if exp == 0 or exp == 1:
-            string = fr"${value}$"
-        elif exp == -1:
-            string = fr"${value:0.1f}$"
+        if precision is None:
+            precision = decimal_digits
+        if exponent is None:
+            exponent = int(math.floor(math.log10(abs(value))))
+
+        coeff = round(value / 10 ** exponent, decimal_digits)
+
+        if exponent in [0, 1]:
+            string = fr"${value:.{precision}f}$"
         else:
-            if int(base) == 1:
-                string = fr"$10^{{{int(exp):d}}}$"
-            else:
-                string = fr"${int(base):d}\times10^{{{int(exp):d}}}$"
-        if sign < 0:
-            string = r"$-$" + string
+            string = fr"${coeff:.{precision}f}\times10^{{{exponent:d}}}$"
         if not unit == "1":
             string += fr" {unit_str}"
     return string
 
 
-def darr_stats_string(darr, lon_name, lat_name, sep=" | ", fmt="auto"):
+def darr_stats_string(
+    darr, lon_name, lat_name, sep=" | ", eq_sign="=", fmt="auto", **kw_unit_format
+):
     """Return min, mean and max of an `xarray.DataArray` as a string."""
     # Compute the stats
     _min = darr.min()
@@ -269,19 +267,18 @@ def darr_stats_string(darr, lon_name, lat_name, sep=" | ", fmt="auto"):
     _max = darr.max()
     # Assemble a string
     txts = []
-    if fmt != "auto":
-        txts.append(f"min={_min.values:{fmt}}")
-        txts.append(f"mean={_mean.values:{fmt}}")
-        txts.append(f"max={_max.values:{fmt}}")
-    else:
-        if (np.log10(abs(_mean)) < 0) or (np.log10(abs(_mean)) > 5):
-            txts.append(f"min={_min.values:.0e}")
-            txts.append(f"mean={_mean.values:.0e}")
-            txts.append(f"max={_max.values:.0e}")
+    for label, arr in zip(["min", "mean", "max"], [_min, _mean, _max]):
+        if fmt == "auto":
+            if (np.log10(abs(_mean)) < 0) or (np.log10(abs(_mean)) > 5):
+                _str = f"{label}{eq_sign}{arr.values:.0e}"
+            else:
+                _str = f"{label}{eq_sign}{np.round(arr.values):.0f}"
+        elif fmt == "pretty":
+            _str = f"{label}{eq_sign}{unit_format(float(arr.values), **kw_unit_format)}"
         else:
-            txts.append(f"min={np.round(_min.values):.0f}")
-            txts.append(f"mean={np.round(_mean.values):.0f}")
-            txts.append(f"max={np.round(_max.values):.0f}")
+            _str = f"{label}{eq_sign}{arr.values:{fmt}}"
+        txts.append(_str)
+
     return sep.join(txts)
 
 
