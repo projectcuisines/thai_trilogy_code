@@ -10,7 +10,7 @@ from model_um import open_mf_um, prep_um_ds
 import mypaths
 from names import exocam, lmdg, rocke3d
 
-THAI_DIR = mypaths.datadir
+THAI_DIR = mypaths.extdatadir
 
 
 def load_exocam(case):

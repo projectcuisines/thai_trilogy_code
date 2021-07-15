@@ -2,7 +2,7 @@
 """Utilities for the ExoCAM output."""
 import dask.array as da
 
-from grid import add_cyclic_point_to_da, reverse_along_dim
+from grid import reverse_along_dim
 from names import exocam
 
 __all__ = ("adjust_exocam_grid", "calc_pres_exocam", "calc_virtual_temp_exocam")
@@ -31,7 +31,7 @@ def adjust_exocam_grid(darr, lat_name="lat", lon_name="lon"):
         out = reverse_along_dim(out, lat_name)
     if lon_name in darr.dims:
         # Add a cyclic point at 360 degree longitude.
-        out = add_cyclic_point_to_da(out, lon_name)
+        # out = add_cyclic_point_to_da(out, lon_name)
         # Shift longitudes
         # (no need to shift the data, since they have the substellar point in the middle)
         out[lon_name] = out[lon_name] - 180
