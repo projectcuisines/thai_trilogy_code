@@ -8,7 +8,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aeolus.model import um
-from aeolus.plot import GeoAxesGrid, label_global_map_gridlines, subplot_label_generator
+from aeolus.plot import (
+    GeoAxesGrid,
+    label_global_map_gridlines,
+    subplot_label_generator,
+    unit_format,
+)
 from calc import spatial_mean
 from grid import add_cyclic_point_to_da
 
@@ -225,35 +230,6 @@ def linspace_pm1(n):
     """Return 2n evenly spaced numbers from -1 to 1, always skipping 0."""
     seq = np.linspace(0, 1, n + 1)
     return np.concatenate([-seq[1:][::-1], seq[1:]])
-
-
-def unit_format(value, unit="1", decimal_digits=1, precision=None, exponent=None):
-    """Prettify numbers with units."""
-    import math
-
-    if unit in ["", "1"]:
-        unit_str = ""
-    else:
-        unit_str = fr'${str(unit).replace(" ", "$ $")}$'
-        if "%" in unit_str:
-            unit_str = unit_str.replace("%", r"\%")
-    if value == 1:
-        string = unit_str
-    else:
-        if precision is None:
-            precision = decimal_digits
-        if exponent is None:
-            exponent = int(math.floor(math.log10(abs(value))))
-
-        coeff = round(value / 10 ** exponent, decimal_digits)
-
-        if exponent in [0, 1]:
-            string = fr"${value:.{precision}f}$"
-        else:
-            string = fr"${coeff:.{precision}f}\times10^{{{exponent:d}}}$"
-        if not unit == "1":
-            string += fr" {unit_str}"
-    return string
 
 
 def darr_stats_string(
