@@ -12,6 +12,7 @@ from grid import EARTH_RADIUS, grid_cell_areas, reverse_along_dim
 from names import names
 
 __all__ = (
+    "altitude_of_cloud_mmr_maximum",
     "bond_albedo",
     "brunt_vaisala_frequency",
     "cloud_area_fraction",
@@ -38,6 +39,7 @@ __all__ = (
     "moist_static_energy",
     "nightside_mean",
     "nondim_rossby_deformation_radius",
+    "open_ocean_frac",
     "potential_temperature",
     "rossby_deformation_radius_isothermal",
     "rossby_deformation_radius_stratified",
@@ -119,6 +121,28 @@ def _trapz(y, x, axis):
     dx = x[tuple(x_sl1)] - x[tuple(x_sl2)]
     integrand = dx * 0.5 * (y[tuple(slice1)] + y[tuple(slice2)])
     return xr.core.duck_array_ops.sum(integrand, axis=axis, skipna=False)
+
+
+def altitude_of_cloud_mmr_maximum(ds, model_key):
+    """Calculate the altitude of the cloud MMR maximum from a THAI dataset."""
+    model_names = getattr(names, model_key.lower())
+    if model_key == "ExoCAM":
+        alt = ds[model_names.z]
+        cld_mmr = ds[model_names.cld_ice_mf] + ds[model_names.cld_liq_mf]
+        out = alt.isel({model_names.lev: cld_mmr.argmax(dim=model_names.lev).compute()})
+    elif model_key == "LMDG":
+        alt = ds[model_names.lev]
+        cld_mmr = ds[model_names.cld_ice_mf]
+        out = alt.isel({model_names.z: cld_mmr.argmax(dim=model_names.z).compute()})
+    elif model_key == "ROCKE3D":
+        alt = ds[model_names.z]
+        cld_mmr = ds[model_names.cld_ice_mf] + ds[model_names.cld_liq_mf]
+        out = alt.isel({model_names.lev: cld_mmr.argmax(dim=model_names.lev).compute()})
+    elif model_key == "UM":
+        alt = ds[model_names.z]
+        cld_mmr = ds[model_names.cld_ice_mf] + ds[model_names.cld_liq_mf]
+        out = cld_mmr.idxmax(dim=model_names.z)
+    return out
 
 
 def bond_albedo(ds, model_key):
@@ -937,6 +961,20 @@ def nondim_rossby_deformation_radius(
         )
 
     return rossby_def_rad / r_planet
+
+
+def open_ocean_frac(ds, model_key):
+    """Extract open ocean fraction from a THAI dataset."""
+    model_names = names[model_key]
+    if model_key == "ExoCAM":
+        out = 1 - ds[model_names.ocean_frac]
+    elif model_key == "LMDG":
+        out = (1000 - ds[model_names.ocean_frac]) / 1000
+    elif model_key == "ROCKE3D":
+        out = ds[model_names.ocean_frac]
+    elif model_key == "UM":
+        out = ds[model_names.ocean_frac]
+    return out
 
 
 def potential_temperature(
