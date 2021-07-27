@@ -31,8 +31,8 @@ def calc_virtual_temp_lmdg(ds, mw_ratio=1.55423618, epsilon=287.058 / 461.52):
         Array of virtual temperature [K].
     """
     # TODO: make this abstract or switch to MetPy
-    # Convert specific humidity to mass mixing ratio
-    mmr_dry = ds[lmdg.sh] / (1.0 - ds[lmdg.sh])
+    # "specific humidity" is actually mass mixing ratio in LMD-G
+    mmr_dry = ds[lmdg.sh]
     # Convert to volume mixing ratio
     vmr_dry = mmr_dry * mw_ratio
     # Calculate volume mixing ratio of water relative to all species

@@ -66,18 +66,20 @@ INTERPOLATOR = partial(
 )
 
 
-def _trapz(y, x, axis):
-    if axis < 0:
-        axis = y.ndim + axis
-    x_sl1 = [slice(None)] * len(x.shape)
-    x_sl1[axis] = slice(1, None)
-    x_sl2 = [slice(None)] * len(x.shape)
-    x_sl2[axis] = slice(None, -1)
-    slice1 = (slice(None),) * axis + (slice(1, None),)
-    slice2 = (slice(None),) * axis + (slice(None, -1),)
-    dx = x[tuple(x_sl1)] - x[tuple(x_sl2)]
-    integrand = dx * 0.5 * (y[tuple(slice1)] + y[tuple(slice2)])
-    return xr.core.duck_array_ops.sum(integrand, axis=axis, skipna=False)
+def _cloud_path_liquid_lmdg(ds, const=None):
+    """Vertically integrate cloud liquid mass mixing ratio in the LMD-G data."""
+    rho = ds[names.lmdg.pres] / (const.rgas * ds[names.lmdg.temp])
+    cld_liq = cloud_mmr_liquid(ds, "LMDG")
+    lwp = integral(rho * cld_liq, dim=names.lmdg.z, coord=ds[names.lmdg.lev])
+    return lwp
+
+
+def _cloud_path_ice_lmdg(ds, const=None):
+    """Vertically integrate cloud ice mass mixing ratio in the LMD-G data."""
+    rho = ds[names.lmdg.pres] / (const.rgas * ds[names.lmdg.temp])
+    cld_ice = cloud_mmr_ice(ds, "LMDG")
+    lwp = integral(rho * cld_ice, dim=names.lmdg.z, coord=ds[names.lmdg.lev])
+    return lwp
 
 
 def _integrate_generic(ds, coord, dim):
@@ -103,6 +105,20 @@ def _integrate_generic(ds, coord, dim):
                 variables[k] = v
     indexes = {k: v for k, v in ds.indexes.items() if k in variables}
     return ds._replace_with_new_dims(variables, coord_names=coord_names, indexes=indexes)
+
+
+def _trapz(y, x, axis):
+    if axis < 0:
+        axis = y.ndim + axis
+    x_sl1 = [slice(None)] * len(x.shape)
+    x_sl1[axis] = slice(1, None)
+    x_sl2 = [slice(None)] * len(x.shape)
+    x_sl2[axis] = slice(None, -1)
+    slice1 = (slice(None),) * axis + (slice(1, None),)
+    slice2 = (slice(None),) * axis + (slice(None, -1),)
+    dx = x[tuple(x_sl1)] - x[tuple(x_sl2)]
+    integrand = dx * 0.5 * (y[tuple(slice1)] + y[tuple(slice2)])
+    return xr.core.duck_array_ops.sum(integrand, axis=axis, skipna=False)
 
 
 def bond_albedo(ds, model_key):
@@ -257,27 +273,27 @@ def cloud_volume_fraction_liquid(ds, model_key):
     return out * 100
 
 
-def cloud_path_ice(ds, model_key):
+def cloud_path_ice(ds, model_key, const=None):
     """Extract ice water path from a THAI dataset."""
     model_names = names[model_key]
     if model_key in ["ExoCAM", "ROCKE3D"]:
         # input in [g m-2]
         out = ds[model_names.iwp] / 1000
     elif model_key == "LMDG":
-        out = ds[model_names.cwp]
+        out = _cloud_path_ice_lmdg(ds, const=const)
     elif model_key == "UM":
         out = ds[model_names.iwp]
     return out
 
 
-def cloud_path_liquid(ds, model_key):
+def cloud_path_liquid(ds, model_key, const=None):
     """Extract ice water path from a THAI dataset."""
     model_names = names[model_key]
     if model_key in ["ExoCAM", "ROCKE3D"]:
         # input in [g m-2]
         out = ds[model_names.lwp] / 1000
     elif model_key == "LMDG":
-        out = ds[model_names.cwp]
+        out = _cloud_path_liquid_lmdg(ds, const=const)
     elif model_key == "UM":
         out = ds[model_names.lwp]
     return out
@@ -368,6 +384,34 @@ def dry_lapse_rate(ds, model_key):
 
     lr = ds[model_names.temp].differentiate(coord) / alt.differentiate(coord)
     return lr
+
+
+def extract_troposphere(ds, model_key, lapse_thresh=-2e-3, alt_thresh=8e3):
+    """Extract tropospheric values from a data array using a lapse rate threshold [K m-1]."""
+    model_names = names[model_key]
+    if model_key == "ExoCAM":
+        alt = ds[model_names.z]
+        coord = model_names.lev
+    elif model_key == "LMDG":
+        alt = ds[model_names.lev]
+        coord = model_names.z
+    elif model_key == "ROCKE3D":
+        alt = ds[model_names.z]
+        coord = model_names.lev
+    elif model_key == "UM":
+        alt = ds[model_names.z]
+        coord = model_names.z
+
+    lapse_rate = dry_lapse_rate(ds, model_key)
+
+    lr_mask = xr.where(
+        (lapse_rate > lapse_thresh) & (alt > alt_thresh),
+        1,
+        0,
+    )
+    boundary_idx = lr_mask.argmax(dim=coord)
+    mask = alt <= alt[boundary_idx]
+    return mask
 
 
 def greenhouse_effect(ds, model_key, const, kind="all_sky"):
@@ -1170,13 +1214,13 @@ def spatial_sum(xr_da, lon_name="longitude", lat_name="latitude", r_planet=EARTH
 
 def specific_humidity(ds, model_key):
     """Extract specific humidity from a THAI dataset."""
-    names[model_key]
+    model_names = names[model_key]
     if model_key == "LMDG":
         # LMD-G outputs mixing ratio instead of specific humidity,
         # so here MR is converted to SH.
-        out = 1 / (ds.sh + 1)
+        out = ds[model_names.sh] / (ds[model_names.sh] + 1)
     else:
-        out = ds.sh
+        out = ds[model_names.sh]
     return out
 
 
