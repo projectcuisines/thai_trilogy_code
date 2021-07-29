@@ -2,9 +2,9 @@ name: thai
 channels:
 - conda-forge
 dependencies:
-- aeolus>=0.4.11
+- aeolus>=0.4.12
 - black
-- cartopy>=0.18
+- cartopy>=0.19
 - dask
 - fastprogress
 - flake8
@@ -16,7 +16,7 @@ dependencies:
 - loguru
 - matplotlib>=3.4
 - metpy
-- nc-time-axis>=1.2
+- nc-time-axis>=1.3
 - netCDF4
 - numpy
 - pandas
@@ -27,5 +27,5 @@ dependencies:
 - python-stratify
 - scipy
 - tqdm
-- xarray>=0.17
+- xarray>=0.18
 - windspharm

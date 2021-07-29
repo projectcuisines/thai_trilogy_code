@@ -8,42 +8,34 @@ Python code for analysing THAI data.
 
 Contributions are welcome.
 
-## Setting up
-1. Install Miniconda or Anaconda.
-2. In the command line, navigate to this folder and type
+## Setting up Python
+Skip the first two steps if you have Jupyter Lab with `nb_conda_kernels` installed already.
+1. Install [Miniforge](https://github.com/conda-forge/miniforge).
+2. Install necessary packages to the `base` environment. Make sure you are installing them from the `conda-forge` channel.
+```bash
+conda install jupyterlab nb_conda_kernels
+```
+3. Check out or download this repository.
+4. In the command line, navigate to the downloaded folder and create a separate conda environment.
 ```bash
 conda env create --file environment.yml
 ```
 
-## List of variables
+## Download THAI data
+All GCM THAI data are permanently available for download [here](https://ckan.emac.gsfc.nasa.gov/organization/thai), with variables described for each dataset.
+If you use those data in your own research, please cite the relevant paper and add the following statement:
 
-| Variable | Units | UM name |
-|----------|-------|------------------|
-| OLR clear| W m-2 | toa_outgoing_longwave_flux_assuming_clear_sky |
-| OLR cloudy| W m-2 | toa_outgoing_longwave_flux |
-| ASR clear| W m-2 | toa_incoming_shortwave_flux - toa_outgoing_shortwave_flux_assuming_clear_sky |
-| ASR cloudy| W m-2 | toa_incoming_shortwave_flux - toa_outgoing_shortwave_flux |
-| Surface temperature map | K | surface_temperature |
-| Downward total SW flux at the surface | W m-2 | surface_downwelling_shortwave_flux_in_air |
-| Net LW flux at the surface | W m-2 | surface_net_downward_longwave_flux |
-| Open ocean fraction| km2 | OPEN OCEAN FRACTION or STASH_m01s03i395 |
-| Total cloud liquid water path | kg m-2 | atmosphere_cloud_liquid_water_content |
-| Total cloud ice water path | kg m-2 | atmosphere_cloud_ice_content |
-| Total vapor column | kg m-2 | TOTAL COLUMN Q (WATER VAPOUR PATH) or STASH_m01s30i461 |
-| Atmospheric temperature | K | air_temperature |
-| U wind speed | m s-1 | eastward_wind |
-| V wind speed | m s-1 | northward_wind |
-| W wind speed | m s-1 | upward_air_velocity |
-| 3D Heating rates SW | K s-1 | tendency_of_air_temperature_due_to_shortwave_heating |
-| 3D Heating rates LW | K s-1 | tendency_of_air_temperature_due_to_longwave_heating |
-| 3D Specific humidity | kg kg-1 | specific_humidity |
-| 3D relative humidity | % | relative_humidity |
-| Total CF | 0-1 | BULK CLOUD FRACTION IN EACH LAYER or STASH_m01s00i266 |
-| Liquid CF | 0-1 | LIQUID CLOUD FRACTION IN EACH LAYER or STASH_m01s00i267 |
-| Ice CF | 0-1 | FROZEN CLOUD FRACTION IN EACH LAYER or STASH_m01s00i268 |
-| Total cloud MMR | kg kg-1 | mass_fraction_of_cloud_liquid_water_in_air + mass_fraction_of_cloud_ice_in_air |
-| Liquid cloud MMR | kg kg-1 | mass_fraction_of_cloud_liquid_water_in_air |
-| Ice cloud MMR | kg kg-1 | mass_fraction_of_cloud_ice_in_air |
-| Pressure at rho (u/v) levels | Pa | air_pressure |
-| Pressure at theta levels | Pa | air_pressure |
-| OLR in each band | W m-2 | UPWARD LW FLUX ON LEVELS AND BANDS |
+> THAI data have been obtained from https://ckan.emac.gsfc.nasa.gov/organization/thai, a data repository of the Sellers Exoplanet Environments Collaboration (SEEC), which is funded in part by the NASA Planetary Science Divisions Internal Scientist Funding Model.
+
+## Open the code
+1. Start the Jupyter Lab, for example from the command line:
+```bash
+jupyter lab
+```
+2. Open noteboks in the `thai` environment and start coding.
+
+## Process data
+If you want to re-draw figures from the THAI trilogy, we recommend that you pre-process THAI data first by averaging the data in time or in space.
+To get a dataset of time-averaged variables, execute the [THAI-Save-Time-Mean.ipynb](THAI-Save-Time-Mean.ipynb) notebook.
+To get a dataset of selected time series, use the [THAI-Save-Time-Series.ipynb](THAI-Save-Time-Series.ipynb) notebook.
+**Before running these notebooks, make sure the paths to THAI data are set up correctly in `mypaths.py`!**
