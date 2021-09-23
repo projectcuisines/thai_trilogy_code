@@ -2,9 +2,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-:warning: **Work in progress** :warning:
-
-Python code for analysing THAI data.
+Python code for analysing [THAI data](https://thai.emac.gsfc.nasa.gov/organization/thai).
 
 Contributions are welcome.
 
