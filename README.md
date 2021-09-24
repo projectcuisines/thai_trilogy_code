@@ -1,13 +1,18 @@
 <h1 align="center">
-Code to reproduce figures in the THAI trilogy.
+Code to reproduce figures in the THAI trilogy
 </h1>
 <h4 align="center">
-Python code to analyze and visulize <a href="https://thai.emac.gsfc.nasa.gov/organization/thai">climate model output</a> for the TRAPPIST-1 Habitable Atmosphere Intercomparison (THAI). Contributions are welcome.
+Python code to analyze and visualize <a href="https://thai.emac.gsfc.nasa.gov/organization/thai">climate model output</a> for the TRAPPIST-1 Habitable Atmosphere Intercomparison (THAI).
 </h4>
+
+<h6 align="center">
+Most figures from the THAI trilogy can be reproduced using Jupyter Notebooks in this reporistory.
+Python scripts contain functions to preprocess and clean the data. They also contain common and model-specific variables for convenience. Contributions are welcome.
+</h6>
 
 <p align="center">
 <a href="https://www.python.org/downloads/">
-<img src="https://img.shields.io/badge/python-3.9-black.svg?logo=python&logoColor=white"
+<img src="https://img.shields.io/badge/python-3.9-black.svg"
      alt="Python 3.9"></a>
 <a href="LICENSE">
 <img src="https://img.shields.io/badge/license-MIT-black.svg"
