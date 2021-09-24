@@ -1,10 +1,32 @@
-[![Python 3.9](https://img.shields.io/badge/python-3.9-blue.svg?logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
-[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+<h1 align="center">
+Code to reproduce figures in the THAI trilogy.
+</h1>
+<h4 align="center">
+Python code to analyze and visulize <a href="https://thai.emac.gsfc.nasa.gov/organization/thai">climate model output</a> for the TRAPPIST-1 Habitable Atmosphere Intercomparison (THAI). Contributions are welcome.
+</h4>
 
-Python code for analysing [THAI data](https://thai.emac.gsfc.nasa.gov/organization/thai).
+<p align="center">
+<a href="https://www.python.org/downloads/">
+<img src="https://img.shields.io/badge/python-3.9-black.svg?logo=python&logoColor=white"
+     alt="Python 3.9"></a>
+<a href="LICENSE">
+<img src="https://img.shields.io/badge/license-MIT-black.svg"
+     alt="License: MIT"></a>
+<a href="https://github.com/psf/black">
+<img src="https://img.shields.io/badge/code%20style-black-000000.svg"
+     alt="black"></a>
+<br>
+<a href="https://arxiv.org/abs/2109.11457">
+<img src="https://img.shields.io/badge/arXiv-2109.11457-red"
+     alt="THAI Trilogy: Part 1"></a>
+<a href="https://arxiv.org/abs/2109.11459">
+<img src="https://img.shields.io/badge/arXiv-2109.11459-red"
+     alt="THAI Trilogy: Part 2"></a>
+<a href="https://arxiv.org/abs/2109.11460">
+<img src="https://img.shields.io/badge/arXiv-2109.11460-red"
+     alt="THAI Trilogy: Part 3"></a>
+</p>
 
-Contributions are welcome.
 
 ## What's in this repo?
 | File | Purpose |
