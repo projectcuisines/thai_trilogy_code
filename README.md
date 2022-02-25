@@ -12,8 +12,8 @@ Python scripts contain functions to preprocess and clean the data. They also con
 
 <p align="center">
 <a href="https://www.python.org/downloads/">
-<img src="https://img.shields.io/badge/python-3.9-black.svg"
-     alt="Python 3.9"></a>
+<img src="https://img.shields.io/badge/python-3.10-black.svg"
+     alt="Python 3.10"></a>
 <a href="LICENSE">
 <img src="https://img.shields.io/badge/license-MIT-black.svg"
      alt="License: MIT"></a>

@@ -11,10 +11,10 @@ dependencies:
 - h5netcdf
 - ipykernel
 - ipywidgets
-- iris>=3.0
+- iris>=3.2
 - latlon23
 - loguru
-- matplotlib>=3.4
+- matplotlib>=3.5
 - metpy
 - nc-time-axis>=1.3
 - netCDF4
@@ -22,7 +22,7 @@ dependencies:
 - pandas
 - pip
 - pre-commit
-- python>=3.9
+- python>=3.10
 - pytest
 - python-stratify
 - scipy
