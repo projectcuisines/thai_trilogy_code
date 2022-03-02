@@ -1304,6 +1304,22 @@ def time_std(xr_da, time_name="time"):
     return xr_da_mean
 
 
+def net_energy_toa(ds, model_key):
+    """Net TOA energy flux."""
+    model_names = names[model_key]
+    if model_key == "ExoCAM":
+        toa_net = ds[model_names.toa_net_sw] - ds[model_names.toa_net_lw]
+    elif model_key == "LMDG":
+        toa_net = ds[model_names.toa_net_sw] - ds[model_names.toa_olr]
+    elif model_key == "ROCKE3D":
+        toa_net = (ds[model_names.toa_isr] - ds[model_names.toa_osr_cs]) - (
+            ds[model_names.toa_olr_cs] - ds[model_names.toa_crf_lw]
+        )
+    elif model_key == "UM":
+        toa_net = ds[model_names.toa_isr] - ds[model_names.toa_osr] - ds[model_names.toa_olr]
+    return toa_net
+
+
 def toa_olr(ds, model_key):
     """Extract top-of-the-atmosphere outgoing longwave radiation from a THAI dataset."""
     model_names = names[model_key]
@@ -1316,6 +1332,20 @@ def toa_olr(ds, model_key):
     elif model_key == "UM":
         out = ds[model_names.toa_olr]
     return out
+
+
+def toa_net_sw(ds, model_key):
+    """Net TOA SW energy flux."""
+    model_names = names[model_key]
+    if model_key == "ExoCAM":
+        toa_net = ds[model_names.toa_net_sw]
+    elif model_key == "LMDG":
+        toa_net = ds[model_names.toa_net_sw]
+    elif model_key == "ROCKE3D":
+        toa_net = ds[model_names.toa_net_sw]
+    elif model_key == "UM":
+        toa_net = ds[model_names.toa_isr] - ds[model_names.toa_osr]
+    return toa_net
 
 
 def upper_atm_vap_mean(ds, model_key, const, pres_levels=[100]):
