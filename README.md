@@ -1,3 +1,9 @@
+<p align="center">
+<a href="https://iopscience.iop.org/collections/2632-3338_focus_issue_THAI">
+<img src="THAI_logo_label.png"
+     alt="THAI logo"></a>
+</p>
+
 <h1 align="center">
 Code to reproduce figures in the THAI trilogy
 </h1>
