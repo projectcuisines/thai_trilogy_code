@@ -107,3 +107,49 @@ To get a dataset of time-averaged variables, use the [THAI-Save-Time-Mean.ipynb]
 To get a dataset of selected time series, use the [THAI-Save-Time-Series.ipynb](THAI-Save-Time-Series.ipynb) notebook.
 **Before running these notebooks, make sure the paths to THAI data are set up correctly in [mypaths.py](mypaths.py)!**
 Also note that these two notebooks use [dask](https://dask.org) which uses multiple cores to speed up calculations. You can adapt the number of cores to be more suitable for your machine.
+
+## Acknowledging our work
+If you use code from this repository, please cite our papers:
+
+    @article{Fauchez22_thai,
+    author = {Fauchez, Thomas J. and Villanueva, Geronimo L. and Sergeev, Denis E. and Turbet, Martin and Boutle, Ian A. and Tsigaridis, Kostas and Way, Michael J. and Wolf, Eric T. and Domagal-Goldman, Shawn D. and Forget, Fran{\c{c}}ois and Haqq-Misra, Jacob and Kopparapu, Ravi K. and Manners, James and Mayne, Nathan J.},
+    doi = {10.3847/PSJ/ac6cf1},
+    issn = {2632-3338},
+    journal = {PSJ},
+    month = {9},
+    number = {9},
+    pages = {213},
+    publisher = {IOP Publishing},
+    title = {{The TRAPPIST-1 Habitable Atmosphere Intercomparison (THAI). III. Simulated Observables—the Return of the Spectrum}},
+    url = {https://iopscience.iop.org/article/10.3847/PSJ/ac6cf1 https://iopscience.iop.org/article/10.3847/PSJ/ac6cf1/meta},
+    volume = {3},
+    year = {2022},
+    }
+    @article{Sergeev22_thai,
+    author = {Sergeev, Denis E. and Fauchez, Thomas J. and Turbet, Martin and Boutle, Ian A. and Tsigaridis, Kostas and Way, Michael J. and Wolf, Eric T. and Domagal-Goldman, Shawn D. and Forget, Fran{\c{c}}ois and Haqq-Misra, Jacob and Kopparapu, Ravi K. and Lambert, F. Hugo and Manners, James and Mayne, Nathan J.},
+    doi = {10.3847/PSJ/ac6cf2},
+    issn = {2632-3338},
+    journal = {PSJ},
+    month = {9},
+    number = {9},
+    pages = {212},
+    publisher = {IOP Publishing},
+    title = {{The TRAPPIST-1 Habitable Atmosphere Intercomparison (THAI). II. Moist Cases—The Two Waterworlds}},
+    url = {https://iopscience.iop.org/article/10.3847/PSJ/ac6cf2 https://iopscience.iop.org/article/10.3847/PSJ/ac6cf2/meta},
+    volume = {3},
+    year = {2022},
+    }
+    @article{Turbet22_thai,
+    author = {Turbet, Martin and Fauchez, Thomas J. and Sergeev, Denis E. and Boutle, Ian A. and Tsigaridis, Kostas and Way, Michael J. and Wolf, Eric T. and Domagal-Goldman, Shawn D. and Forget, Fran{\c{c}}ois and Haqq-Misra, Jacob and Kopparapu, Ravi K. and Lambert, F. Hugo and Manners, James and Mayne, Nathan J. and Sohl, Linda},
+    doi = {10.3847/PSJ/ac6cf0},
+    issn = {2632-3338},
+    journal = {PSJ},
+    month = {9},
+    number = {9},
+    pages = {211},
+    publisher = {IOP Publishing},
+    title = {{The TRAPPIST-1 Habitable Atmosphere Intercomparison (THAI). I. Dry Cases—The Fellowship of the GCMs}},
+    url = {https://iopscience.iop.org/article/10.3847/PSJ/ac6cf0 https://iopscience.iop.org/article/10.3847/PSJ/ac6cf0/meta},
+    volume = {3},
+    year = {2022},
+    }
