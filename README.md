@@ -21,15 +21,25 @@ Python scripts contain functions to preprocess and clean the data. They also con
 <img src="https://img.shields.io/badge/code%20style-black-000000.svg"
      alt="black"></a>
 <br>
+<a href="https://doi.org/10.3847/PSJ/ac6cf0">
+<img src="https://img.shields.io/badge/DOI-10.3847%2FPSJ%2Fac6cf0-purple"
+     alt="Published Part 1"></a>
+<a href="https://iopscience.iop.org/article/10.3847/PSJ/ac6cf2">
+<img src="https://img.shields.io/badge/DOI-10.3847%2FPSJ%2Fac6cf2-purple"
+     alt="Published Part 2"></a>
+<a href="https://iopscience.iop.org/article/10.3847/PSJ/ac6cf1">
+<img src="https://img.shields.io/badge/DOI-10.3847%2FPSJ%2Fac6cf1-purple"
+     alt="Published Part 3"></a>
+<br>
 <a href="https://arxiv.org/abs/2109.11457">
 <img src="https://img.shields.io/badge/arXiv-2109.11457-red"
-     alt="THAI Trilogy: Part 1"></a>
+     alt="Preprint: Part 1"></a>
 <a href="https://arxiv.org/abs/2109.11459">
 <img src="https://img.shields.io/badge/arXiv-2109.11459-red"
-     alt="THAI Trilogy: Part 2"></a>
+     alt="Preprint: Part 2"></a>
 <a href="https://arxiv.org/abs/2109.11460">
 <img src="https://img.shields.io/badge/arXiv-2109.11460-red"
-     alt="THAI Trilogy: Part 3"></a>
+     alt="Preprint: Part 3"></a>
 </p>
 
 
